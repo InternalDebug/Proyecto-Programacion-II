@@ -4,7 +4,7 @@ namespace FairPlay.Models.Enums;
 /// Estado de una fase.
 /// SQL: fase.estado  CHECK (estado IN ('Pendiente', 'EnCurso', 'Cerrada'))  DEFAULT 'Pendiente'.
 /// </summary>
-public enum EstadoFasec:\Users\Pachacuti\Desktop\Models\Enums\EstadoInscripcion.cs
+public enum EstadoFase
 {
     /// <summary>Aún no empieza (valor por defecto).</summary>
     Pendiente,
