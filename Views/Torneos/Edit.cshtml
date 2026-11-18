@@ -1,0 +1,21 @@
+@model FairPlay.ViewModels.TorneoFormViewModel
+@{
+    ViewData["Title"] = "Editar torneo";
+}
+
+<h1 class="h3 mb-1">Editar torneo</h1>
+<p class="text-muted">Código: <strong>@Model.Codigo</strong> (no se puede cambiar)</p>
+
+@* asp-route-id lleva el código en la URL; el controlador usa ESE valor, no un campo del formulario *@
+<form asp-action="Edit" asp-route-id="@Model.Codigo" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+    <partial name="_CamposTorneo" model="Model" />
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

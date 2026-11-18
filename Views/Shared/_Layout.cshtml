@@ -26,6 +26,15 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Torneos" asp-action="Buscar">Buscar torneo</a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Torneos" asp-action="Index">Mis torneos</a>
+                            </li>
+                        }
                     </ul>
 
                     @* Zona de cuenta: cambia según haya o no sesión iniciada *@
@@ -65,6 +74,15 @@
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     @mensaje
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            }
+
+            @* Mensaje de error temporal (TempData), por ejemplo si no se pudo eliminar un torneo *@
+            @if (TempData["Error"] is string mensajeError)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @mensajeError
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
                 </div>
             }

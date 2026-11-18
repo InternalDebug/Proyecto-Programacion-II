@@ -1,0 +1,17 @@
+@model FairPlay.ViewModels.BuscarTorneoViewModel
+@{
+    ViewData["Title"] = "Buscar torneo";
+}
+
+<h1 class="h3 mb-3">Buscar torneo por código</h1>
+
+@* GET: el código viaja en la URL (/Torneos/Buscar?codigo=ABCD2345), así el enlace se puede compartir *@
+<form asp-action="Buscar" method="get">
+    <div class="mb-3">
+        <label asp-for="Codigo" class="form-label"></label>
+        <input asp-for="Codigo" name="codigo" class="form-control" autocomplete="off" autofocus />
+        <span asp-validation-for="Codigo" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Buscar</button>
+</form>

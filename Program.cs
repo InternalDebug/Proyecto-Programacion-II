@@ -19,6 +19,9 @@ builder.Services.AddDbContext<FairPlayContext>(o => o.UseSqlite(cadenaConexion))
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddScoped<IServicioCuentas, ServicioCuentas>();
 
+// --- Servicio de gestion de torneos ---
+builder.Services.AddScoped<IServicioTorneos, ServicioTorneos>();
+
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>

@@ -1,0 +1,21 @@
+@model FairPlay.Models.Torneo
+@{
+    ViewData["Title"] = "Eliminar torneo";
+}
+
+<h1 class="h3 mb-3">Eliminar torneo</h1>
+
+<p>
+    ¿Seguro que quieres eliminar el torneo <strong>@Model.Nombre</strong> (código <code>@Model.Codigo</code>)?
+</p>
+
+@* Las fases y los equipos se borran en cascada (ON DELETE CASCADE del script SQL) *@
+<div class="alert alert-warning">
+    Se eliminarán también todos sus datos: @Model.Fases.Count fase(s) y @Model.Equipos.Count equipo(s),
+    con sus jugadores y partidos. Esta acción no se puede deshacer.
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.Codigo" method="post">
+    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+    <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
+</form>

@@ -1,0 +1,45 @@
+@model FairPlay.ViewModels.TorneoDetalleViewModel
+@{
+    ViewData["Title"] = Model.Torneo.Nombre;
+    var t = Model.Torneo;
+}
+
+<h1 class="h3 mb-1">@t.Nombre</h1>
+<p class="text-muted">Código: <code>@t.Codigo</code></p>
+
+<dl class="row">
+    <dt class="col-sm-3">Descripción</dt>
+    <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(t.Descripcion) ? "—" : t.Descripcion)</dd>
+
+    <dt class="col-sm-3">Organizador</dt>
+    @* Solo el nombre de usuario: nunca el correo ni el hash *@
+    <dd class="col-sm-9">@t.Organizador?.NombreUsuario</dd>
+
+    <dt class="col-sm-3">Formato</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.Formato)</dd>
+
+    <dt class="col-sm-3">Estado</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.Estado)</dd>
+
+    <dt class="col-sm-3">Inscripción</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.ModoInscripcion)</dd>
+
+    <dt class="col-sm-3">Máximo de equipos</dt>
+    <dd class="col-sm-9">@(t.MaxEquipos?.ToString() ?? "Sin límite")</dd>
+
+    <dt class="col-sm-3">Puntos</dt>
+    <dd class="col-sm-9">Victoria: @t.PuntosVictoria · Empate: @t.PuntosEmpate · Derrota: @t.PuntosDerrota</dd>
+
+    <dt class="col-sm-3">Fecha de inicio</dt>
+    <dd class="col-sm-9">@(t.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</dd>
+
+    <dt class="col-sm-3">Fecha de fin</dt>
+    <dd class="col-sm-9">@(t.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
+</dl>
+
+@* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
+@if (Model.EsOrganizador)
+{
+    <a asp-action="Edit" asp-route-id="@t.Codigo" class="btn btn-primary">Editar</a>
+    <a asp-action="Delete" asp-route-id="@t.Codigo" class="btn btn-outline-danger">Eliminar</a>
+}

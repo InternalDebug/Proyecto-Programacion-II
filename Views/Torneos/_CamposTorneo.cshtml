@@ -1,0 +1,67 @@
+@* Campos compartidos por Create y Edit. Recibe un TorneoFormViewModel. *@
+@using FairPlay.Models.Enums
+@model FairPlay.ViewModels.TorneoFormViewModel
+
+<div class="mb-3">
+    <label asp-for="Nombre" class="form-label"></label>
+    <input asp-for="Nombre" class="form-control" />
+    <span asp-validation-for="Nombre" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Descripcion" class="form-label"></label>
+    <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+    <span asp-validation-for="Descripcion" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Formato" class="form-label"></label>
+    <select asp-for="Formato" asp-items="Html.GetEnumSelectList<FormatoTorneo>()" class="form-select"></select>
+    <span asp-validation-for="Formato" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ModoInscripcion" class="form-label"></label>
+    <select asp-for="ModoInscripcion" asp-items="Html.GetEnumSelectList<ModoInscripcion>()" class="form-select"></select>
+    <span asp-validation-for="ModoInscripcion" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="MaximoEquipos" class="form-label"></label>
+    <input asp-for="MaximoEquipos" class="form-control" />
+    <div class="form-text">Opcional. Déjalo vacío si no hay límite de equipos.</div>
+    <span asp-validation-for="MaximoEquipos" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="PuntosVictoria" class="form-label"></label>
+        <input asp-for="PuntosVictoria" class="form-control" />
+        <span asp-validation-for="PuntosVictoria" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="PuntosEmpate" class="form-label"></label>
+        <input asp-for="PuntosEmpate" class="form-control" />
+        <span asp-validation-for="PuntosEmpate" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="PuntosDerrota" class="form-label"></label>
+        <input asp-for="PuntosDerrota" class="form-control" />
+        <span asp-validation-for="PuntosDerrota" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="FechaInicio" class="form-label"></label>
+        <input asp-for="FechaInicio" class="form-control" type="date" />
+        <div class="form-text">Opcional.</div>
+        <span asp-validation-for="FechaInicio" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="FechaFin" class="form-label"></label>
+        <input asp-for="FechaFin" class="form-control" type="date" />
+        <div class="form-text">Opcional.</div>
+        <span asp-validation-for="FechaFin" class="text-danger"></span>
+    </div>
+</div>
