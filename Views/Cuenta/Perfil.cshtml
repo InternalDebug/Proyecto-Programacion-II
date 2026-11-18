@@ -1,0 +1,19 @@
+@model FairPlay.Models.Usuario
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+
+<h1 class="h3 mb-3">Mi perfil</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Nombre de usuario</dt>
+    <dd class="col-sm-9">@Model.NombreUsuario</dd>
+
+    <dt class="col-sm-3">Correo electrónico</dt>
+    <dd class="col-sm-9">@Model.Email</dd>
+
+    <dt class="col-sm-3">Miembro desde</dt>
+    <dd class="col-sm-9">@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm") (UTC)</dd>
+</dl>
+
+@* Nota: nunca mostramos PasswordHash. *@

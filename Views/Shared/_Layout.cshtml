@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -27,12 +27,48 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+
+                    @* Zona de cuenta: cambia según haya o no sesión iniciada *@
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Perfil">
+                                    Hola, <strong>@User.Identity.Name</strong>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                @* Cerrar sesión es un POST con token antiforgery (lo agrega el form automáticamente) *@
+                                <form asp-controller="Cuenta" asp-action="Logout" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-link nav-link text-dark">Cerrar sesión</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Registro">Crear cuenta</a>
+                            </li>
+                        }
+                    </ul>
                 </div>
             </div>
         </nav>
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @* Mensaje temporal (TempData) que dejan los controladores, por ejemplo tras registrarse *@
+            @if (TempData["Mensaje"] is string mensaje)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @mensaje
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            }
+
             @RenderBody()
         </main>
     </div>
