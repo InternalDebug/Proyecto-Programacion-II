@@ -1,0 +1,45 @@
+@using FairPlay.Services
+@model List<FairPlay.Models.Partido>
+@{
+    ViewData["Title"] = "Mis partidos";
+}
+
+<h1 class="h3 mb-3">Mis partidos</h1>
+<p class="text-muted">Partidos en los que el organizador te designó como árbitro. Primero los que se están jugando.</p>
+
+@if (Model.Count == 0)
+{
+    <p class="text-muted">Todavía no te designaron como árbitro de ningún partido.</p>
+}
+else
+{
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Torneo</th>
+                <th>Ronda</th>
+                <th>Partido</th>
+                <th>Fecha y hora</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                var torneo = ReglasPartido.TorneoDe(p);
+
+                <tr>
+                    <td>@torneo.Nombre</td>
+                    <td>@p.Ronda?.Nombre</td>
+                    <td>@p.Local?.Nombre <strong>@ReglasPartido.Marcador(p)</strong> @p.Visitante?.Nombre</td>
+                    <td>@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</td>
+                    <td><partial name="_EstadoPartidoBadge" model="p.Estado" /></td>
+                    <td>
+                        <a asp-action="Details" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idPartido="@p.IdPartido" class="btn btn-sm btn-primary">Abrir</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

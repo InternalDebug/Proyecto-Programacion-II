@@ -1,0 +1,16 @@
+@* Enlace "Mis partidos" de la barra de navegación (lo dibuja PartidosNavViewComponent) *@
+@model FairPlay.Services.ResumenArbitraje
+
+<li class="nav-item">
+    <a class="nav-link text-dark" asp-controller="Partidos" asp-action="Arbitrados">
+        Mis partidos
+        @if (Model.EnVivo > 0)
+        {
+            <span class="badge bg-danger" title="En vivo">@Model.EnVivo</span>
+        }
+        @if (Model.PorJugar > 0)
+        {
+            <span class="badge bg-secondary" title="Programados">@Model.PorJugar</span>
+        }
+    </a>
+</li>

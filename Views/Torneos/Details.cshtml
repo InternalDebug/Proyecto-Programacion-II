@@ -43,6 +43,11 @@
     <dd class="col-sm-9">@(t.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
 </dl>
 
+@* Los partidos son públicos para quien conozca el código del torneo *@
+<p>
+    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
+</p>
+
 @* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
 @if (Model.EsOrganizador)
 {

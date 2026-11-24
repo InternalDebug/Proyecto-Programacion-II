@@ -480,6 +480,17 @@ public class ServicioEquipos : IServicioEquipos
                 return "El torneo ya no admite nuevos equipos.";
         }
 
+        // REGLA (Paso 4): quien es árbitro de algún partido de este torneo no puede inscribir un equipo en él.
+        // Es la otra mitad de la restricción de ServicioPartidos.AsignarArbitroAsync (que impide designar
+        // árbitro a un responsable de equipo): así la regla no se esquiva inscribiendo el equipo DESPUÉS.
+        // El organizador queda exento (en un torneo cerrado él inscribe los equipos).
+        if (!esOrganizador
+            && await _contexto.Partidos.AnyAsync(p =>
+                p.IdArbitro == idUsuario && p.Ronda!.Fase!.IdTorneo == torneo.IdTorneo))
+        {
+            return "Eres árbitro de un partido de este torneo, así que no puedes inscribir un equipo en él.";
+        }
+
         // REGLA: max_equipos no existe en la BD, se aplica aquí. Solo cuentan los equipos APROBADOS.
         if (torneo.MaxEquipos.HasValue)
         {

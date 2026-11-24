@@ -27,6 +27,9 @@ builder.Services.AddScoped<IServicioEquipos, ServicioEquipos>();
 builder.Services.AddScoped<IServicioJugadores, ServicioJugadores>();
 builder.Services.AddSingleton<IAlmacenEscudos, AlmacenEscudos>();
 
+// --- Partidos, árbitro y cambios de estado (Paso 4) ---
+builder.Services.AddScoped<IServicioPartidos, ServicioPartidos>();
+
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>

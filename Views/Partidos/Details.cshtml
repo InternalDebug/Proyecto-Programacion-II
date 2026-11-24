@@ -1,0 +1,150 @@
+@using System.Globalization
+@using FairPlay.Models.Enums
+@using FairPlay.Services
+@model FairPlay.ViewModels.PartidoDetalleViewModel
+@{
+    var p = Model.Partido;
+    var t = Model.Torneo;
+    ViewData["Title"] = $"{p.Local?.Nombre} vs {p.Visitante?.Nombre}";
+
+    // Valor del input datetime-local: siempre "yyyy-MM-ddTHH:mm", sin importar la cultura del servidor
+    var fechaInput = p.FechaHora?.ToString("yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture) ?? string.Empty;
+
+    // Ronda del partido (para el subtítulo)
+    var ronda = p.Ronda;
+    var rondaTexto = ronda is null
+        ? string.Empty
+        : ronda.Nombre + (ronda.Grupo is null ? string.Empty : $" · {ronda.Grupo.Nombre}");
+}
+
+<p class="mb-1">
+    <a asp-action="Index" asp-route-codigoTorneo="@t.Codigo">&larr; Partidos de @t.Nombre</a>
+</p>
+
+<h1 class="h3 mb-1">@p.Local?.Nombre vs @p.Visitante?.Nombre</h1>
+<p class="text-muted">@rondaTexto</p>
+
+<div class="d-flex align-items-center mb-3">
+    <span class="display-5 fw-bold me-3">@ReglasPartido.Marcador(p)</span>
+    <partial name="_EstadoPartidoBadge" model="p.Estado" />
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Fecha y hora</dt>
+    <dd class="col-sm-9">@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</dd>
+
+    <dt class="col-sm-3">Árbitro</dt>
+    <dd class="col-sm-9">@(p.Arbitro?.NombreUsuario ?? "Sin designar")</dd>
+</dl>
+
+@* ---------- Botones de cambio de estado: solo los que ESTE usuario puede usar ---------- *@
+@if (Model.Transiciones.Count > 0)
+{
+    <h2 class="h5 mt-4">Estado del partido</h2>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        @foreach (var nuevo in Model.Transiciones)
+        {
+            // Las acciones difíciles de deshacer piden confirmación antes de enviarse
+            string? confirmar = nuevo == EstadoPartido.Finalizado
+                ? "return confirm('¿Finalizar el partido?');"
+                : (nuevo == EstadoPartido.EnVivo && p.Estado == EstadoPartido.Finalizado
+                    ? "return confirm('¿Reabrir el partido finalizado?');"
+                    : null);
+
+            var claseBoton = nuevo switch
+            {
+                EstadoPartido.EnVivo => "btn-danger",
+                EstadoPartido.Finalizado => "btn-success",
+                EstadoPartido.Suspendido => "btn-warning",
+                _ => "btn-outline-secondary"
+            };
+
+            <form asp-action="CambiarEstado" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" onsubmit="@confirmar">
+                <input type="hidden" name="nuevoEstado" value="@nuevo" />
+                <button type="submit" class="btn @claseBoton">@ReglasPartido.TextoAccion(p.Estado, nuevo)</button>
+            </form>
+        }
+    </div>
+}
+else if (Model.EsArbitro && !p.EsDescanso)
+{
+    <p class="text-muted">
+        No hay acciones disponibles para ti en este estado.
+        @if (p.Estado == EstadoPartido.Finalizado)
+        {
+            <span>Solo el organizador puede reabrir un partido finalizado.</span>
+        }
+        else if (p.Estado == EstadoPartido.Suspendido)
+        {
+            <span>Solo el organizador puede volver a programar un partido suspendido.</span>
+        }
+    </p>
+}
+
+@* ---------- Herramientas del organizador ---------- *@
+@if (Model.EsOrganizador)
+{
+    <h2 class="h5 mt-4">Gestión del organizador</h2>
+
+    @if (Model.PuedeAsignarArbitro)
+    {
+        <form asp-action="AsignarArbitro" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
+            <div class="col-sm-6 col-md-4">
+                <label for="nombreUsuario" class="form-label">Árbitro (nombre de usuario)</label>
+                <input type="text" id="nombreUsuario" name="nombreUsuario" class="form-control" value="@p.Arbitro?.NombreUsuario" />
+                <div class="form-text">Déjalo vacío para quitar al árbitro.</div>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Guardar árbitro</button>
+            </div>
+        </form>
+    }
+
+    @if (Model.PuedeEditarFecha)
+    {
+        <form asp-action="ProgramarFecha" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
+            <div class="col-sm-6 col-md-4">
+                <label for="fechaHora" class="form-label">Fecha y hora</label>
+                <input type="datetime-local" id="fechaHora" name="fechaHora" class="form-control" value="@fechaInput" />
+                <div class="form-text">Déjala vacía para quitar la fecha.</div>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Guardar fecha</button>
+            </div>
+        </form>
+    }
+
+    @* El historial lo ve SOLO el organizador (el servicio ni siquiera lo carga para los demás). *@
+    <h2 class="h5 mt-4">Historial de cambios de estado</h2>
+
+    @if (Model.Historial.Count == 0)
+    {
+        <p class="text-muted">Todavía no hay cambios de estado registrados.</p>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Fecha y hora</th>
+                    <th>Usuario</th>
+                    <th>Cambio</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Historial)
+                {
+                    @* El historial se guarda en UTC: se muestra en la hora local del servidor *@
+                    var fechaLocal = DateTime.SpecifyKind(c.FechaHora, DateTimeKind.Utc).ToLocalTime();
+
+                    <tr>
+                        <td>@fechaLocal.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td>@(c.Usuario?.NombreUsuario ?? "(usuario eliminado)")</td>
+                        <td>@ReglasPartido.NombreEstado(c.EstadoAnterior) &rarr; @ReglasPartido.NombreEstado(c.EstadoNuevo)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}

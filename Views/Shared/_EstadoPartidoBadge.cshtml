@@ -1,0 +1,14 @@
+@* Insignia de estado de un partido. Recibe un EstadoPartido. (Para el estado del torneo existe _EstadoBadge.) *@
+@using FairPlay.Models.Enums
+@using FairPlay.Services
+@model EstadoPartido
+@{
+    var clase = Model switch
+    {
+        EstadoPartido.EnVivo => "bg-danger",
+        EstadoPartido.Finalizado => "bg-success",
+        EstadoPartido.Suspendido => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}
+<span class="badge @clase">@ReglasPartido.NombreEstado(Model)</span>

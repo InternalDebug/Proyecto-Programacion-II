@@ -36,6 +36,8 @@
                             </li>
                             @* "Solicitudes de inscripción": solo aparece si el usuario organiza torneos con aprobación *@
                             @await Component.InvokeAsync("SolicitudesNav")
+                            @* "Mis partidos": solo aparece si el usuario es árbitro designado en algún partido *@
+                            @await Component.InvokeAsync("PartidosNav")
                         }
                     </ul>
 

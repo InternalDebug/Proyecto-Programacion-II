@@ -1,0 +1,65 @@
+@using FairPlay.Services
+@model FairPlay.ViewModels.PartidosTorneoViewModel
+@{
+    var t = Model.Torneo;
+    ViewData["Title"] = "Partidos - " + t.Nombre;
+}
+
+<h1 class="h3 mb-1">Partidos</h1>
+<p class="text-muted">
+    Torneo:
+    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">@t.Nombre</a>
+    · <code>@t.Codigo</code>
+</p>
+
+@if (Model.Partidos.Count == 0)
+{
+    <p class="text-muted">Este torneo todavía no tiene partidos programados.</p>
+}
+
+@* Se agrupa por el id de la ronda (y no por el objeto Ronda) porque cada partido trae su propia copia de la ronda. *@
+@foreach (var ronda in Model.Partidos.GroupBy(p => p.IdRonda))
+{
+    var r = ronda.First().Ronda!;
+    var titulo = $"{r.Fase?.Nombre} · {r.Nombre}" + (r.Grupo is null ? string.Empty : $" · {r.Grupo.Nombre}");
+
+    <h2 class="h5 mt-4">@titulo</h2>
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Local</th>
+                <th class="text-center">Marcador</th>
+                <th>Visitante</th>
+                <th>Fecha y hora</th>
+                <th>Estado</th>
+                <th>Árbitro</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in ronda)
+            {
+                <tr>
+                    <td>@p.Local?.Nombre</td>
+                    <td class="text-center fw-bold">@ReglasPartido.Marcador(p)</td>
+                    <td>@(p.EsDescanso ? "—" : p.Visitante?.Nombre)</td>
+                    <td>@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</td>
+                    <td>
+                        @if (!p.EsDescanso)
+                        {
+                            <partial name="_EstadoPartidoBadge" model="p.Estado" />
+                        }
+                    </td>
+                    <td>@(p.Arbitro?.NombreUsuario ?? "—")</td>
+                    <td>
+                        @if (!p.EsDescanso)
+                        {
+                            <a asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
