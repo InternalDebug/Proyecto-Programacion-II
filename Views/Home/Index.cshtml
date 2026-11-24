@@ -1,8 +1,58 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="fp-hero">
+    @* Líneas de una cancha: círculo central, línea media y área *@
+    <svg class="fp-hero__pitch" viewBox="0 0 800 400" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"
+         fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="420" y="30" width="360" height="340" rx="4" />
+        <line x1="600" y1="30" x2="600" y2="370" />
+        <circle cx="600" cy="200" r="58" />
+        <circle cx="600" cy="200" r="3" fill="currentColor" />
+        <rect x="420" y="120" width="70" height="160" />
+        <rect x="710" y="120" width="70" height="160" />
+    </svg>
+
+    <div class="fp-hero__body">
+        <div class="fp-eyebrow">Gestión de torneos</div>
+        <h1>Organiza tu torneo. <em>Sin complicaciones.</em></h1>
+        <p>Crea ligas, copas y sistemas suizos, comparte un código y deja que cada equipo encuentre su lugar en la tabla.</p>
+
+        <div class="d-flex flex-wrap gap-2">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn btn-primary" asp-controller="Torneos" asp-action="Create">Crear torneo</a>
+                <a class="btn btn-outline-secondary" asp-controller="Torneos" asp-action="Index">Mis torneos</a>
+            }
+            else
+            {
+                <a class="btn btn-primary" asp-controller="Cuenta" asp-action="Registro">Empezar</a>
+                <a class="btn btn-outline-secondary" asp-controller="Torneos" asp-action="Buscar">Buscar por código</a>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="fp-formats" aria-label="Formatos disponibles">
+    <article class="fp-format">
+        <span class="fp-format__n">01</span>
+        <h3>Liga</h3>
+        <p>Todos contra todos en una sola tabla de posiciones.</p>
+    </article>
+    <article class="fp-format">
+        <span class="fp-format__n">02</span>
+        <h3>Copa</h3>
+        <p>Eliminación directa: pierdes y quedas fuera.</p>
+    </article>
+    <article class="fp-format">
+        <span class="fp-format__n">03</span>
+        <h3>Grupos + Copa</h3>
+        <p>Fase de grupos y luego cruces eliminatorios.</p>
+    </article>
+    <article class="fp-format">
+        <span class="fp-format__n">04</span>
+        <h3>Suizo</h3>
+        <p>Rondas fijas con rivales de nivel parecido.</p>
+    </article>
+</section>

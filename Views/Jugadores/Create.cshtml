@@ -1,0 +1,23 @@
+@model FairPlay.ViewModels.JugadorFormViewModel
+@{
+    ViewData["Title"] = "Agregar jugador";
+}
+
+<h1 class="h3 mb-1">Agregar jugador</h1>
+@if (!string.IsNullOrEmpty(Model.NombreEquipo))
+{
+    <p class="text-muted">Equipo: <strong>@Model.NombreEquipo</strong></p>
+}
+
+<form asp-controller="Jugadores" asp-action="Create" asp-route-codigoTorneo="@Model.CodigoTorneo" asp-route-idEquipo="@Model.IdEquipo" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+    <partial name="_CamposJugador" model="Model" />
+
+    <button type="submit" class="btn btn-primary">Agregar jugador</button>
+    <a asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@Model.CodigoTorneo" asp-route-idEquipo="@Model.IdEquipo" class="btn btn-link">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

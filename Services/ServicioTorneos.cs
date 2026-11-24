@@ -143,6 +143,59 @@ public class ServicioTorneos : IServicioTorneos
     }
 
     // ------------------------------------------------------------------
+    // CAMBIAR ESTADO (abrir / cerrar inscripciones)
+    // ------------------------------------------------------------------
+
+    public async Task<ResultadoServicio<Torneo>> CambiarEstadoAsync(int idUsuario, string? codigo, EstadoTorneo nuevoEstado)
+    {
+        var buscado = NormalizarCodigo(codigo);
+
+        var torneo = await _contexto.Torneos.FirstOrDefaultAsync(t => t.Codigo == buscado);
+
+        if (torneo is null)
+        {
+            return ResultadoServicio<Torneo>.NoEncontrado();
+        }
+
+        // REGLA DE PERMISOS: solo el organizador abre o cierra las inscripciones.
+        if (torneo.IdOrganizador != idUsuario)
+        {
+            return ResultadoServicio<Torneo>.SinPermiso();
+        }
+
+        // REGLA DE TRANSICIÓN: solo Borrador <-> Inscripcion (ver ReglasTorneo.EstadoSiguiente).
+        var permitido = ReglasTorneo.EstadoSiguiente(torneo.Estado);
+
+        if (permitido is null)
+        {
+            return ResultadoServicio<Torneo>.Invalido(
+                string.Empty,
+                $"El torneo está en estado \"{ReglasTorneo.NombreEstado(torneo.Estado)}\": desde aquí ya no se puede abrir ni cerrar la inscripción.");
+        }
+
+        if (permitido.Value != nuevoEstado)
+        {
+            return ResultadoServicio<Torneo>.Invalido(
+                string.Empty,
+                $"Desde \"{ReglasTorneo.NombreEstado(torneo.Estado)}\" solo se puede pasar a \"{ReglasTorneo.NombreEstado(permitido.Value)}\".");
+        }
+
+        torneo.Estado = nuevoEstado;
+
+        try
+        {
+            await _contexto.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "No se pudo cambiar el estado del torneo {Codigo}.", buscado);
+            return ResultadoServicio<Torneo>.Invalido(string.Empty, "No se pudo cambiar el estado del torneo. Inténtalo de nuevo.");
+        }
+
+        return ResultadoServicio<Torneo>.Correcto(torneo);
+    }
+
+    // ------------------------------------------------------------------
     // EDITAR
     // ------------------------------------------------------------------
 
@@ -175,17 +228,17 @@ public class ServicioTorneos : IServicioTorneos
         }
 
         // REGLA: max_equipos no existe como regla en la BD (ni en ningún trigger), así que la aplicamos aquí:
-        // el nuevo máximo no puede ser menor que los equipos ya inscritos (los rechazados no cuentan).
+        // el nuevo máximo no puede ser menor que los equipos ya APROBADOS (los pendientes y rechazados no cuentan).
         if (datos.MaximoEquipos.HasValue)
         {
-            int inscritos = await _contexto.Equipos.CountAsync(e =>
-                e.IdTorneo == torneo.IdTorneo && e.EstadoInscripcion != EstadoInscripcion.Rechazado);
+            int aprobados = await _contexto.Equipos.CountAsync(e =>
+                e.IdTorneo == torneo.IdTorneo && e.EstadoInscripcion == EstadoInscripcion.Aprobado);
 
-            if (datos.MaximoEquipos.Value < inscritos)
+            if (datos.MaximoEquipos.Value < aprobados)
             {
                 return ResultadoServicio<Torneo>.Invalido(
                     nameof(TorneoFormViewModel.MaximoEquipos),
-                    $"Ya hay {inscritos} equipos inscritos; el máximo no puede ser menor.");
+                    $"Ya hay {aprobados} equipos aprobados; el máximo no puede ser menor.");
             }
         }
 

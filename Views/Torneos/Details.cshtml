@@ -1,7 +1,13 @@
+@using FairPlay.Models.Enums
+@using FairPlay.Services
 @model FairPlay.ViewModels.TorneoDetalleViewModel
 @{
     ViewData["Title"] = Model.Torneo.Nombre;
     var t = Model.Torneo;
+
+    // Estado al que el organizador puede pasar ahora (null si ya no se puede abrir ni cerrar)
+    var siguiente = ReglasTorneo.EstadoSiguiente(t.Estado);
+    var textoBoton = siguiente == EstadoTorneo.Inscripcion ? "Abrir inscripciones" : "Cerrar inscripciones (volver a borrador)";
 }
 
 <h1 class="h3 mb-1">@t.Nombre</h1>
@@ -40,6 +46,74 @@
 @* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
 @if (Model.EsOrganizador)
 {
-    <a asp-action="Edit" asp-route-id="@t.Codigo" class="btn btn-primary">Editar</a>
-    <a asp-action="Delete" asp-route-id="@t.Codigo" class="btn btn-outline-danger">Eliminar</a>
+    <p>
+        <a asp-action="Edit" asp-route-id="@t.Codigo" class="btn btn-primary">Editar</a>
+        <a asp-action="Delete" asp-route-id="@t.Codigo" class="btn btn-outline-danger">Eliminar</a>
+
+        @if (siguiente is not null)
+        {
+            @if (Model.OmitirAvisoCambioEstado)
+            {
+                @* Marcó "No mostrar de nuevo": el botón cambia el estado directamente (POST) *@
+                <form asp-action="CambiarEstado" asp-route-id="@t.Codigo" method="post" class="d-inline">
+                    <input type="hidden" name="nuevoEstado" value="@siguiente" />
+                    <button type="submit" class="btn btn-success">@textoBoton</button>
+                </form>
+            }
+            else
+            {
+                @* Primero muestra la pantalla informativa (con la casilla "No mostrar de nuevo") *@
+                <a asp-action="ConfirmarEstado" asp-route-id="@t.Codigo" asp-route-nuevoEstado="@siguiente" class="btn btn-success">@textoBoton</a>
+            }
+        }
+    </p>
+}
+
+<h2 class="h4 mt-4">Equipos</h2>
+
+@if (Model.PuedeInscribir)
+{
+    <p>
+        <a asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@t.Codigo" class="btn btn-primary">Inscribir equipo</a>
+    </p>
+}
+else if (User.Identity?.IsAuthenticated != true && t.Estado == EstadoTorneo.Inscripcion && t.ModoInscripcion != ModoInscripcion.Cerrada)
+{
+    <p class="text-muted">
+        <a asp-controller="Cuenta" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Inicia sesión</a>
+        para inscribir tu equipo.
+    </p>
+}
+
+@if (Model.Equipos.Count == 0)
+{
+    <p class="text-muted">Todavía no hay equipos inscritos.</p>
+}
+else
+{
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Equipo</th>
+                <th>Ciudad</th>
+                <th>Inscripción</th>
+                <th>Jugadores</th>
+                <th>Responsable</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model.Equipos)
+            {
+                <tr>
+                    <td><img src="@Url.UrlEscudo(e.LogoEscudo)" alt="Escudo de @e.Nombre" width="32" height="32" class="rounded border" /></td>
+                    <td><a asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idEquipo="@e.IdEquipo">@e.Nombre</a></td>
+                    <td>@(string.IsNullOrWhiteSpace(e.Ciudad) ? "—" : e.Ciudad)</td>
+                    <td>@Html.DisplayFor(m => e.EstadoInscripcion)</td>
+                    <td>@e.Jugadores.Count</td>
+                    <td>@e.Responsable?.NombreUsuario</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }

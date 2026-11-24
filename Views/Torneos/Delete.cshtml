@@ -3,19 +3,23 @@
     ViewData["Title"] = "Eliminar torneo";
 }
 
-<h1 class="h3 mb-3">Eliminar torneo</h1>
+<div class="fp-card fp-card--narrow" style="max-width: 560px;">
+    <div class="fp-eyebrow" style="color: var(--fp-red);">Zona de peligro</div>
+    <h1 class="h3 mb-3">Eliminar torneo</h1>
 
-<p>
-    ¿Seguro que quieres eliminar el torneo <strong>@Model.Nombre</strong> (código <code>@Model.Codigo</code>)?
-</p>
+    <p>
+        ¿Seguro que quieres eliminar el torneo <strong>@Model.Nombre</strong>
+        (código <code>@Model.Codigo</code>)?
+    </p>
 
-@* Las fases y los equipos se borran en cascada (ON DELETE CASCADE del script SQL) *@
-<div class="alert alert-warning">
-    Se eliminarán también todos sus datos: @Model.Fases.Count fase(s) y @Model.Equipos.Count equipo(s),
-    con sus jugadores y partidos. Esta acción no se puede deshacer.
+    @* Las fases y los equipos se borran en cascada (ON DELETE CASCADE del script SQL) *@
+    <div class="alert alert-warning">
+        Se eliminarán también todos sus datos: @Model.Fases.Count fase(s) y @Model.Equipos.Count equipo(s),
+        con sus jugadores y partidos. Esta acción no se puede deshacer.
+    </div>
+
+    <form asp-action="Delete" asp-route-id="@Model.Codigo" method="post" class="d-flex align-items-center gap-2">
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
+    </form>
 </div>
-
-<form asp-action="Delete" asp-route-id="@Model.Codigo" method="post">
-    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
-    <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
-</form>

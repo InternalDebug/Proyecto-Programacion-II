@@ -3,44 +3,47 @@
     ViewData["Title"] = "Mis torneos";
 }
 
-<h1 class="h3 mb-3">Mis torneos</h1>
-
-<p>
-    <a asp-action="Create" class="btn btn-primary">Crear torneo</a>
-    <a asp-action="Buscar" class="btn btn-outline-secondary">Buscar por código</a>
-</p>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Organizador</div>
+        <h1>Mis torneos</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Buscar" class="btn btn-outline-secondary">Buscar por código</a>
+        <a asp-action="Create" class="btn btn-primary">Crear torneo</a>
+    </div>
+</div>
 
 @if (Model.Count == 0)
 {
-    <p class="text-muted">Todavía no has creado ningún torneo.</p>
+    <div class="fp-empty">
+        <div class="fp-empty__ball" aria-hidden="true"></div>
+        <p class="mb-3">Todavía no has creado ningún torneo.</p>
+        <a asp-action="Create" class="btn btn-primary">Crear mi primer torneo</a>
+    </div>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Formato</th>
-                <th>Estado</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var torneo in Model)
-            {
-                <tr>
-                    <td><code>@torneo.Codigo</code></td>
-                    <td>@torneo.Nombre</td>
-                    <td>@Html.DisplayFor(m => torneo.Formato)</td>
-                    <td>@Html.DisplayFor(m => torneo.Estado)</td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@torneo.Codigo">Ver</a> |
-                        <a asp-action="Edit" asp-route-id="@torneo.Codigo">Editar</a> |
-                        <a asp-action="Delete" asp-route-id="@torneo.Codigo">Eliminar</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="fp-tournaments">
+        @foreach (var torneo in Model)
+        {
+            <article class="fp-match">
+                <span class="fp-match__code">@torneo.Codigo</span>
+
+                <div>
+                    <a class="fp-match__name" asp-action="Details" asp-route-id="@torneo.Codigo">@torneo.Nombre</a>
+                    <div class="fp-match__meta">
+                        <span class="fp-badge fp-badge--formato">@Html.DisplayFor(m => torneo.Formato)</span>
+                        <partial name="_EstadoBadge" model="torneo.Estado" />
+                    </div>
+                </div>
+
+                <div class="fp-match__actions">
+                    <a class="fp-icon-link" asp-action="Details" asp-route-id="@torneo.Codigo">Ver</a>
+                    <a class="fp-icon-link" asp-action="Edit" asp-route-id="@torneo.Codigo">Editar</a>
+                    <a class="fp-icon-link fp-icon-link--danger" asp-action="Delete" asp-route-id="@torneo.Codigo">Eliminar</a>
+                </div>
+            </article>
+        }
+    </div>
 }

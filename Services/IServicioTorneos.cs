@@ -1,4 +1,5 @@
 using FairPlay.Models;
+using FairPlay.Models.Enums;
 using FairPlay.ViewModels;
 
 namespace FairPlay.Services;
@@ -30,6 +31,12 @@ public interface IServicioTorneos
 
     /// <summary>Crea un torneo nuevo; el organizador es el usuario y el código lo genera el servidor.</summary>
     Task<ResultadoServicio<Torneo>> CrearAsync(int idUsuario, TorneoFormViewModel datos);
+
+    /// <summary>
+    /// Abre o cierra las inscripciones: Borrador -> Inscripcion o Inscripcion -> Borrador.
+    /// Solo su organizador. Los demás estados (EnCurso, Finalizado) los manejará el calendario (paso 6).
+    /// </summary>
+    Task<ResultadoServicio<Torneo>> CambiarEstadoAsync(int idUsuario, string? codigo, EstadoTorneo nuevoEstado);
 
     /// <summary>Modifica un torneo. Solo su organizador puede hacerlo.</summary>
     Task<ResultadoServicio<Torneo>> EditarAsync(int idUsuario, string? codigo, TorneoFormViewModel datos);

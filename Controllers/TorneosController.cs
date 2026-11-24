@@ -1,3 +1,4 @@
+using FairPlay.Models.Enums;
 using FairPlay.Seguridad;
 using FairPlay.Services;
 using FairPlay.ViewModels;
@@ -7,38 +8,33 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairPlay.Controllers;
 
 /// <summary>
-/// CRUD de torneos y búsqueda por código. Controlador "delgado": valida el formulario,
-/// llama a IServicioTorneos y traduce el resultado a una respuesta HTTP.
+/// CRUD de torneos, búsqueda por código y apertura/cierre de inscripciones.
+/// Controlador "delgado": valida el formulario, llama a los servicios y traduce el resultado a HTTP.
 ///
 /// Rutas (el "id" de la URL es el CÓDIGO de 8 caracteres, NO el id numérico de la tabla):
-///   GET  /Torneos                    -> Mis torneos (los que organizo)
-///   GET  /Torneos/Buscar?codigo=XXXX -> Buscar un torneo por su código
-///   GET  /Torneos/Details/{código}   -> Ver un torneo (cualquiera que conozca el código)
-///   GET/POST /Torneos/Create         -> Crear
-///   GET/POST /Torneos/Edit/{código}  -> Editar (solo el organizador)
-///   GET/POST /Torneos/Delete/{código}-> Eliminar (solo el organizador)
+///   GET  /Torneos                           -> Mis torneos (los que organizo)
+///   GET  /Torneos/Buscar?codigo=XXXX        -> Buscar un torneo por su código
+///   GET  /Torneos/Details/{código}          -> Ver un torneo con sus equipos (quien conozca el código)
+///   GET/POST /Torneos/Create                -> Crear
+///   GET/POST /Torneos/Edit/{código}         -> Editar (solo el organizador)
+///   GET/POST /Torneos/Delete/{código}       -> Eliminar (solo el organizador)
+///   GET  /Torneos/ConfirmarEstado/{código}  -> Pantalla informativa antes de abrir/cerrar inscripciones
+///   POST /Torneos/CambiarEstado/{código}    -> Abrir/cerrar inscripciones (solo el organizador)
 ///
 /// [Authorize] a nivel de clase = TODAS las acciones exigen sesión iniciada,
 /// salvo las marcadas con [AllowAnonymous] (Buscar y Details).
-/// Es la opción segura por defecto: si en el futuro agregas una acción y olvidas protegerla,
-/// ya queda protegida.
 /// </summary>
 [Authorize]
-public class TorneosController : Controller
+public class TorneosController : ControladorBase
 {
     private readonly IServicioTorneos _torneos;
+    private readonly IServicioEquipos _equipos;
 
-    public TorneosController(IServicioTorneos torneos)
+    public TorneosController(IServicioTorneos torneos, IServicioEquipos equipos)
     {
         _torneos = torneos;
+        _equipos = equipos;
     }
-
-    /// <summary>
-    /// Id del usuario con sesión iniciada. Solo se usa en acciones con [Authorize], donde la cookie
-    /// siempre trae el id (lo guarda CuentaController.IniciarSesionAsync).
-    /// </summary>
-    private int IdUsuarioActual =>
-        User.ObtenerIdUsuario() ?? throw new InvalidOperationException("La sesión no contiene el id del usuario.");
 
     // ------------------------------------------------------------------
     // LISTA: MIS TORNEOS (opción B: cada usuario solo ve los que organiza)
@@ -58,14 +54,12 @@ public class TorneosController : Controller
 
     // GET: /Torneos/Buscar            -> formulario vacío
     // GET: /Torneos/Buscar?codigo=XXX -> busca y, si existe, redirige al detalle
-    // Es GET (no POST) porque buscar no modifica nada y así el enlace se puede compartir.
     [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> Buscar(string? codigo)
     {
         var modelo = new BuscarTorneoViewModel { Codigo = codigo };
 
-        // Primera visita (sin código escrito): solo mostramos el formulario.
         if (string.IsNullOrWhiteSpace(codigo))
         {
             return View(modelo);
@@ -80,7 +74,6 @@ public class TorneosController : Controller
             return View(modelo);
         }
 
-        // Redirigimos con el código ya normalizado (mayúsculas, sin espacios) tal como está guardado.
         return RedirectToAction(nameof(Details), new { id = torneo.Codigo });
     }
 
@@ -89,8 +82,7 @@ public class TorneosController : Controller
     // ------------------------------------------------------------------
 
     // GET: /Torneos/Details/ABCD2345
-    // Es pública: conocer el código es la "llave" para ver el torneo (por eso se usa el código
-    // y no el id numérico, que se podría adivinar probando 1, 2, 3...).
+    // Es pública: conocer el código es la "llave" para ver el torneo.
     [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> Details(string? id)
@@ -104,11 +96,33 @@ public class TorneosController : Controller
 
         // Un visitante sin sesión devuelve null -> la comparación da false (no es organizador).
         var idUsuario = User.ObtenerIdUsuario();
+        bool esOrganizador = idUsuario == torneo.IdOrganizador;
+
+        // Equipos que ESTE usuario puede ver (los Aprobados para todos; los demás según su rol).
+        var equipos = await _equipos.ListarVisiblesAsync(torneo.IdTorneo, idUsuario, esOrganizador);
+
+        // ¿Puede inscribir un equipo ahora? Solo se pregunta si hay sesión iniciada.
+        bool puedeInscribir = false;
+        if (idUsuario is not null)
+        {
+            var inscripcion = await _equipos.ObtenerTorneoParaInscribirAsync(idUsuario.Value, torneo.Codigo);
+            puedeInscribir = inscripcion.Exito;
+        }
+
+        // ¿El organizador pidió no ver más la pantalla informativa del cambio de estado?
+        bool omitirAviso = false;
+        if (esOrganizador)
+        {
+            omitirAviso = AvisoOmitido(idUsuario!.Value, ReglasTorneo.EstadoSiguiente(torneo.Estado));
+        }
 
         var modelo = new TorneoDetalleViewModel
         {
             Torneo = torneo,
-            EsOrganizador = idUsuario == torneo.IdOrganizador
+            EsOrganizador = esOrganizador,
+            Equipos = equipos,
+            PuedeInscribir = puedeInscribir,
+            OmitirAvisoCambioEstado = omitirAviso
         };
 
         return View(modelo);
@@ -130,14 +144,12 @@ public class TorneosController : Controller
     [ValidateAntiForgeryToken] // rechaza formularios que no vengan de nuestra propia página (CSRF)
     public async Task<IActionResult> Create(TorneoFormViewModel modelo)
     {
-        // 1) Validaciones de los atributos del ViewModel (largo, rangos, fechas...).
         if (!ModelState.IsValid)
         {
             return View(modelo);
         }
 
-        // 2) El servicio asigna el organizador (el usuario actual) y genera el código único.
-        //    El formulario no puede influir en ninguno de los dos.
+        // El servicio asigna el organizador (el usuario actual) y genera el código único.
         var resultado = await _torneos.CrearAsync(IdUsuarioActual, modelo);
 
         if (!resultado.Exito)
@@ -162,7 +174,6 @@ public class TorneosController : Controller
     {
         var resultado = await _torneos.ObtenerParaGestionAsync(IdUsuarioActual, id);
 
-        // NoEncontrado -> 404 | SinPermiso -> 403 (ASP.NET redirige a /Cuenta/AccesoDenegado)
         var error = RespuestaDeError(resultado);
         if (error is not null)
         {
@@ -185,8 +196,6 @@ public class TorneosController : Controller
             return View(modelo);
         }
 
-        // El servicio vuelve a comprobar que el usuario sea el organizador:
-        // alguien podría enviar este POST directamente, sin pasar por el GET.
         var resultado = await _torneos.EditarAsync(IdUsuarioActual, id, modelo);
 
         var error = RespuestaDeError(resultado);
@@ -225,8 +234,6 @@ public class TorneosController : Controller
     }
 
     // POST: /Torneos/Delete/ABCD2345
-    // [ActionName("Delete")]: se llama DeleteConfirmed en C# (no se pueden repetir dos métodos
-    // Delete con la misma firma), pero responde a la misma URL /Torneos/Delete. Es el patrón de CineMVC.
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(string? id)
@@ -250,26 +257,99 @@ public class TorneosController : Controller
     }
 
     // ------------------------------------------------------------------
-    // Método auxiliar privado
+    // ABRIR / CERRAR INSCRIPCIONES (solo el organizador)
+    // ------------------------------------------------------------------
+
+    // GET: /Torneos/ConfirmarEstado/ABCD2345?nuevoEstado=Inscripcion
+    // Pantalla informativa que se muestra ANTES de cambiar el estado. No cambia nada por sí sola.
+    [HttpGet]
+    public async Task<IActionResult> ConfirmarEstado(string? id, EstadoTorneo? nuevoEstado)
+    {
+        var resultado = await _torneos.ObtenerParaGestionAsync(IdUsuarioActual, id);
+
+        var error = RespuestaDeError(resultado);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        var torneo = resultado.Valor!;
+
+        // Solo se ofrece la transición que de verdad está disponible desde el estado actual.
+        if (nuevoEstado is null || ReglasTorneo.EstadoSiguiente(torneo.Estado) != nuevoEstado)
+        {
+            TempData["Error"] = "Ese cambio de estado no está disponible para este torneo.";
+            return RedirectToAction(nameof(Details), new { id = torneo.Codigo });
+        }
+
+        return View(new CambioEstadoViewModel
+        {
+            Codigo = torneo.Codigo,
+            NombreTorneo = torneo.Nombre,
+            Modo = torneo.ModoInscripcion,
+            NuevoEstado = nuevoEstado.Value
+        });
+    }
+
+    // POST: /Torneos/CambiarEstado/ABCD2345
+    // Se llega desde la pantalla informativa (con o sin la casilla "No mostrar de nuevo")
+    // o directamente desde el botón del detalle, si el organizador ya marcó esa casilla.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CambiarEstado(string? id, EstadoTorneo? nuevoEstado, bool noMostrarMas)
+    {
+        // Si el formulario no trae el estado destino, la petición está mal formada.
+        if (nuevoEstado is null)
+        {
+            return BadRequest();
+        }
+
+        var resultado = await _torneos.CambiarEstadoAsync(IdUsuarioActual, id, nuevoEstado.Value);
+
+        var error = RespuestaDeError(resultado);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        if (!resultado.Exito) // Invalido: la transición no está permitida
+        {
+            TempData["Error"] = resultado.Mensaje;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // "No mostrar de nuevo": recordamos la elección en una cookie (solo si el cambio salió bien).
+        if (noMostrarMas)
+        {
+            Response.Cookies.Append(NombreCookieAviso(IdUsuarioActual, nuevoEstado.Value), "1", new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddYears(1), // dura un año
+                HttpOnly = true,                              // JavaScript no puede leerla
+                SameSite = SameSiteMode.Lax,
+                IsEssential = true,
+                Secure = Request.IsHttps
+            });
+        }
+
+        TempData["Mensaje"] = nuevoEstado == EstadoTorneo.Inscripcion
+            ? "Inscripciones abiertas: desde ahora se pueden inscribir equipos."
+            : "Inscripciones cerradas: el torneo volvió a borrador.";
+
+        return RedirectToAction(nameof(Details), new { id = resultado.Valor!.Codigo });
+    }
+
+    // ------------------------------------------------------------------
+    // Métodos auxiliares privados (cookie "No mostrar de nuevo")
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Traduce NoEncontrado y SinPermiso a su respuesta HTTP. Devuelve null cuando el resultado es
-    /// Correcto o Invalido: esos dos casos los resuelve cada acción a su manera.
-    /// Así no se repite el mismo if en las cuatro acciones que gestionan un torneo.
+    /// Nombre de la cookie que recuerda "No mostrar de nuevo". Lleva el estado destino y el id del
+    /// usuario: así abrir y cerrar tienen su propia elección, y en un navegador compartido cada
+    /// usuario conserva la suya. Es por navegador (no se guarda en la base de datos).
     /// </summary>
-    private IActionResult? RespuestaDeError<T>(ResultadoServicio<T> resultado) where T : class
-    {
-        if (resultado.Estado == EstadoResultado.NoEncontrado)
-        {
-            return NotFound(); // 404: el código no existe
-        }
+    private static string NombreCookieAviso(int idUsuario, EstadoTorneo destino) =>
+        $"FairPlay.OmitirAviso.{destino}.{idUsuario}";
 
-        if (resultado.Estado == EstadoResultado.SinPermiso)
-        {
-            return Forbid(); // 403: existe, pero el usuario no es el organizador
-        }
-
-        return null;
-    }
+    private bool AvisoOmitido(int idUsuario, EstadoTorneo? destino) =>
+        destino is not null && Request.Cookies[NombreCookieAviso(idUsuario, destino.Value)] == "1";
 }

@@ -1,0 +1,3 @@
+@* Insignia de estado del torneo. Recibe un EstadoTorneo. *@
+@model FairPlay.Models.Enums.EstadoTorneo
+<span class="fp-badge fp-badge--@Model.ToString().ToLowerInvariant()">@Html.DisplayFor(m => m)</span>

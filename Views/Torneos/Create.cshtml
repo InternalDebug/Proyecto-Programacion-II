@@ -3,16 +3,23 @@
     ViewData["Title"] = "Crear torneo";
 }
 
-<h1 class="h3 mb-3">Crear torneo</h1>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Nuevo</div>
+        <h1>Crear torneo</h1>
+    </div>
+</div>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" class="fp-card fp-card--form">
     @* Errores generales (los de cada campo salen debajo de su input) *@
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
     <partial name="_CamposTorneo" model="Model" />
 
-    <button type="submit" class="btn btn-primary">Crear torneo</button>
-    <a asp-action="Index" class="btn btn-link">Cancelar</a>
+    <div class="d-flex align-items-center gap-2 mt-4 pt-3" style="border-top: 1px solid var(--fp-line);">
+        <button type="submit" class="btn btn-primary">Crear torneo</button>
+        <a asp-action="Index" class="btn btn-link">Cancelar</a>
+    </div>
 </form>
 
 @section Scripts {

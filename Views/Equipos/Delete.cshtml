@@ -1,0 +1,22 @@
+@model FairPlay.Models.Equipo
+@{
+    ViewData["Title"] = "Eliminar equipo";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<h1 class="h3 mb-3">Eliminar equipo</h1>
+
+<p>
+    ¿Seguro que quieres eliminar el equipo <strong>@Model.Nombre</strong>?
+</p>
+
+@* Los jugadores se borran en cascada (ON DELETE CASCADE del script SQL) *@
+<div class="alert alert-warning">
+    Se eliminarán también sus @Model.Jugadores.Count jugador(es) y su escudo. Esta acción no se puede deshacer.
+    Al eliminarlo, su nombre quedará libre para volver a usarse en este torneo.
+</div>
+
+<form asp-controller="Equipos" asp-action="Delete" asp-route-codigoTorneo="@Model.Torneo!.Codigo" asp-route-idEquipo="@Model.IdEquipo" asp-route-returnUrl="@returnUrl" method="post">
+    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+    <a asp-action="Details" asp-route-codigoTorneo="@Model.Torneo!.Codigo" asp-route-idEquipo="@Model.IdEquipo" class="btn btn-link">Cancelar</a>
+</form>

@@ -1,0 +1,57 @@
+@using FairPlay.Models.Enums
+@model FairPlay.ViewModels.CambioEstadoViewModel
+@{
+    bool abrir = Model.NuevoEstado == EstadoTorneo.Inscripcion;
+    ViewData["Title"] = abrir ? "Abrir inscripciones" : "Cerrar inscripciones";
+}
+
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+
+<div class="alert alert-info">
+    @if (abrir)
+    {
+        <p class="mb-2">
+            Desde este momento se podrán inscribir equipos en el torneo <strong>@Model.NombreTorneo</strong>.
+        </p>
+
+        @if (Model.Modo == ModoInscripcion.Cerrada)
+        {
+            <p class="mb-0">La inscripción es <strong>cerrada</strong>: solo tú, como organizador, podrás inscribir equipos.</p>
+        }
+        else if (Model.Modo == ModoInscripcion.ConAprobacion)
+        {
+            <p class="mb-0">
+                La inscripción es <strong>con aprobación</strong>: cualquier usuario con el código del torneo podrá enviar una solicitud.
+                Tú decides si la apruebas o la rechazas en <em>Solicitudes de inscripción</em>, en la barra de navegación.
+            </p>
+        }
+        else
+        {
+            <p class="mb-0">
+                La inscripción es <strong>automática</strong>: cualquier usuario con el código del torneo podrá inscribir su equipo
+                y quedará aprobado al instante.
+            </p>
+        }
+    }
+    else
+    {
+        <p class="mb-2">
+            Desde este momento <strong>no se podrán inscribir nuevos equipos</strong> en el torneo <strong>@Model.NombreTorneo</strong>
+            (solo tú, mientras esté en borrador).
+        </p>
+        <p class="mb-0">Los equipos ya inscritos se conservan, y las solicitudes pendientes quedan a la espera.</p>
+    }
+</div>
+
+<form asp-action="CambiarEstado" asp-route-id="@Model.Codigo" method="post">
+    @* Estado al que pasará el torneo (el servidor vuelve a comprobar que esa transición sea válida) *@
+    <input type="hidden" name="nuevoEstado" value="@Model.NuevoEstado" />
+
+    <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" id="noMostrarMas" name="noMostrarMas" value="true" />
+        <label class="form-check-label" for="noMostrarMas">No mostrar de nuevo</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">@(abrir ? "Abrir inscripciones" : "Cerrar inscripciones")</button>
+    <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
+</form>

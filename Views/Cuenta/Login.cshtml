@@ -3,41 +3,40 @@
     ViewData["Title"] = "Iniciar sesión";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <h1 class="h3 mb-3">Iniciar sesión</h1>
+<div class="fp-card fp-card--narrow">
+    <div class="fp-eyebrow">Bienvenido de vuelta</div>
+    <h1 class="h3 mb-4">Iniciar sesión</h1>
 
-        <form asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+    <form asp-action="Login" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            @* Campo oculto: conserva la página a la que se quería entrar *@
-            <input type="hidden" asp-for="ReturnUrl" />
+        @* Campo oculto: conserva la página a la que se quería entrar *@
+        <input type="hidden" asp-for="ReturnUrl" />
 
-            <div class="mb-3">
-                <label asp-for="UsuarioOCorreo" class="form-label"></label>
-                <input asp-for="UsuarioOCorreo" class="form-control" autocomplete="username" autofocus />
-                <span asp-validation-for="UsuarioOCorreo" class="text-danger"></span>
-            </div>
+        <div class="mb-3">
+            <label asp-for="UsuarioOCorreo" class="form-label"></label>
+            <input asp-for="UsuarioOCorreo" class="form-control" autocomplete="username" autofocus />
+            <span asp-validation-for="UsuarioOCorreo" class="text-danger"></span>
+        </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="current-password" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" autocomplete="current-password" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
 
-            <div class="form-check mb-3">
-                <input asp-for="Recordarme" class="form-check-input" />
-                <label asp-for="Recordarme" class="form-check-label"></label>
-            </div>
+        <div class="form-check mb-4">
+            <input asp-for="Recordarme" class="form-check-input" />
+            <label asp-for="Recordarme" class="form-check-label"></label>
+        </div>
 
-            <button type="submit" class="btn btn-primary w-100">Entrar</button>
-        </form>
+        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </form>
 
-        <p class="mt-3 text-center">
-            ¿No tienes cuenta?
-            <a asp-action="Registro">Regístrate</a>
-        </p>
-    </div>
+    <p class="mt-4 mb-0 text-center text-muted small">
+        ¿No tienes cuenta?
+        <a asp-action="Registro">Regístrate</a>
+    </p>
 </div>
 
 @section Scripts {

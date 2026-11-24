@@ -1,0 +1,97 @@
+@using FairPlay.Models.Enums
+@model FairPlay.ViewModels.EquipoDetalleViewModel
+@{
+    var equipo = Model.Equipo;
+    var torneo = equipo.Torneo!;
+    ViewData["Title"] = equipo.Nombre;
+
+    // Los jugadores se ordenan por dorsal
+    var jugadores = equipo.Jugadores.OrderBy(j => j.Dorsal).ToList();
+
+    // El torneo finalizado ya no admite cambios en los planteles
+    bool torneoFinalizado = torneo.Estado == EstadoTorneo.Finalizado;
+}
+
+<div class="d-flex align-items-center mb-3">
+    <img src="@Url.UrlEscudo(equipo.LogoEscudo)" alt="Escudo de @equipo.Nombre" width="96" height="96" class="rounded border me-3" />
+    <div>
+        <h1 class="h3 mb-1">@equipo.Nombre</h1>
+        <p class="text-muted mb-0">
+            @(string.IsNullOrWhiteSpace(equipo.Ciudad) ? "Sin ciudad" : equipo.Ciudad)
+            · Torneo:
+            <a asp-controller="Torneos" asp-action="Details" asp-route-id="@torneo.Codigo">@torneo.Nombre</a>
+        </p>
+        <p class="mb-0">
+            Inscripción: <strong>@Html.DisplayFor(m => m.Equipo.EstadoInscripcion)</strong>
+            · Responsable: @equipo.Responsable?.NombreUsuario
+        </p>
+    </div>
+</div>
+
+@* El organizador decide las solicitudes desde su ventana "Solicitudes de inscripción" *@
+@if (Model.EsOrganizador && equipo.EstadoInscripcion != EstadoInscripcion.Aprobado)
+{
+    <div class="alert alert-warning">
+        Este equipo está <strong>@Html.DisplayFor(m => m.Equipo.EstadoInscripcion)</strong>.
+        Puedes aprobarlo, rechazarlo o eliminarlo en
+        <a asp-controller="Solicitudes" asp-action="Index">Solicitudes de inscripción</a>.
+    </div>
+}
+else if (Model.EsResponsable && equipo.EstadoInscripcion == EstadoInscripcion.Pendiente)
+{
+    <div class="alert alert-info">Tu solicitud está pendiente: el organizador del torneo debe aprobarla.</div>
+}
+else if (Model.EsResponsable && equipo.EstadoInscripcion == EstadoInscripcion.Rechazado)
+{
+    <div class="alert alert-danger">El organizador rechazó la inscripción de este equipo.</div>
+}
+
+@if (Model.PuedeGestionar)
+{
+    <p>
+        <a asp-action="Edit" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@equipo.IdEquipo" class="btn btn-primary">Editar equipo</a>
+        <a asp-action="Delete" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@equipo.IdEquipo" class="btn btn-outline-danger">Eliminar equipo</a>
+    </p>
+}
+
+<h2 class="h5 mt-4">Jugadores (@jugadores.Count)</h2>
+
+@if (Model.PuedeGestionar && !torneoFinalizado)
+{
+    <p>
+        <a asp-controller="Jugadores" asp-action="Create" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@equipo.IdEquipo" class="btn btn-outline-primary">Agregar jugador</a>
+    </p>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Dorsal</th>
+            <th>Jugador</th>
+            <th>Posición</th>
+            <th>Nacimiento</th>
+            <th>Capitán</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var j in jugadores)
+        {
+            <tr>
+                <td>@j.Dorsal</td>
+                <td>@j.NombreCompleto</td>
+                <td>@Html.DisplayFor(m => j.Posicion)</td>
+                <td>@j.FechaNacimiento.ToString("dd/MM/yyyy")</td>
+                <td>@(j.EsCapitan ? "Sí" : "")</td>
+                <td>
+                    @if (Model.PuedeGestionar && !torneoFinalizado)
+                    {
+                        <a asp-controller="Jugadores" asp-action="Edit" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@equipo.IdEquipo" asp-route-idJugador="@j.IdJugador">Editar</a>
+                        <text>|</text>
+                        <a asp-controller="Jugadores" asp-action="Delete" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@equipo.IdEquipo" asp-route-idJugador="@j.IdJugador">Eliminar</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

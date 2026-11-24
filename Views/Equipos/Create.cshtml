@@ -1,0 +1,26 @@
+@model FairPlay.ViewModels.InscribirEquipoViewModel
+@{
+    ViewData["Title"] = "Inscribir equipo";
+}
+
+<h1 class="h3 mb-1">Inscribir equipo</h1>
+<p class="text-muted">Torneo: <code>@Model.CodigoTorneo</code></p>
+
+@* enctype="multipart/form-data" es OBLIGATORIO para poder enviar el archivo del escudo *@
+<form asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@Model.CodigoTorneo" method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+    <h2 class="h5">Datos del equipo</h2>
+    <partial name="_CamposEquipo" model="Model" />
+
+    <h2 class="h5 mt-4">Primer jugador</h2>
+    <p class="text-muted">Todo equipo necesita al menos un jugador al inscribirse. Podrás agregar más desde la página del equipo.</p>
+    <partial name="_CamposJugador" for="PrimerJugador" />
+
+    <button type="submit" class="btn btn-primary">Inscribir equipo</button>
+    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@Model.CodigoTorneo" class="btn btn-link">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

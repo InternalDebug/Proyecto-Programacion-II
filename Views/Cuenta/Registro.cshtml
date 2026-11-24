@@ -3,47 +3,46 @@
     ViewData["Title"] = "Crear cuenta";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <h1 class="h3 mb-3">Crear cuenta</h1>
+<div class="fp-card fp-card--narrow">
+    <div class="fp-eyebrow">Únete al equipo</div>
+    <h1 class="h3 mb-4">Crear cuenta</h1>
 
-        <form asp-action="Registro" method="post">
-            @* Muestra solo los errores generales (los de cada campo salen debajo de su input) *@
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+    <form asp-action="Registro" method="post">
+        @* Muestra solo los errores generales (los de cada campo salen debajo de su input) *@
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            <div class="mb-3">
-                <label asp-for="NombreUsuario" class="form-label"></label>
-                <input asp-for="NombreUsuario" class="form-control" autocomplete="username" autofocus />
-                <span asp-validation-for="NombreUsuario" class="text-danger"></span>
-            </div>
+        <div class="mb-3">
+            <label asp-for="NombreUsuario" class="form-label"></label>
+            <input asp-for="NombreUsuario" class="form-control" autocomplete="username" autofocus />
+            <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+        </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" type="email" autocomplete="email" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" type="email" autocomplete="email" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="new-password" />
-                <div class="form-text">Mínimo 8 caracteres, con al menos una letra y un número.</div>
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" autocomplete="new-password" />
+            <div class="form-text">Mínimo 8 caracteres, con al menos una letra y un número.</div>
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
 
-            <div class="mb-3">
-                <label asp-for="ConfirmarPassword" class="form-label"></label>
-                <input asp-for="ConfirmarPassword" class="form-control" autocomplete="new-password" />
-                <span asp-validation-for="ConfirmarPassword" class="text-danger"></span>
-            </div>
+        <div class="mb-4">
+            <label asp-for="ConfirmarPassword" class="form-label"></label>
+            <input asp-for="ConfirmarPassword" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="ConfirmarPassword" class="text-danger"></span>
+        </div>
 
-            <button type="submit" class="btn btn-primary w-100">Crear cuenta</button>
-        </form>
+        <button type="submit" class="btn btn-primary w-100">Crear cuenta</button>
+    </form>
 
-        <p class="mt-3 text-center">
-            ¿Ya tienes cuenta?
-            <a asp-action="Login">Inicia sesión</a>
-        </p>
-    </div>
+    <p class="mt-4 mb-0 text-center text-muted small">
+        ¿Ya tienes cuenta?
+        <a asp-action="Login">Inicia sesión</a>
+    </p>
 </div>
 
 @section Scripts {

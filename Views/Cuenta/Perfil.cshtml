@@ -3,17 +3,29 @@
     ViewData["Title"] = "Mi perfil";
 }
 
-<h1 class="h3 mb-3">Mi perfil</h1>
+<div class="fp-card fp-card--form">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="fp-avatar" aria-hidden="true">@(Model.NombreUsuario.Length > 0 ? Model.NombreUsuario.Substring(0, 1) : "?")</div>
+        <div>
+            <div class="fp-eyebrow mb-0">Mi perfil</div>
+            <h1 class="h3 mb-0">@Model.NombreUsuario</h1>
+        </div>
+    </div>
 
-<dl class="row">
-    <dt class="col-sm-3">Nombre de usuario</dt>
-    <dd class="col-sm-9">@Model.NombreUsuario</dd>
-
-    <dt class="col-sm-3">Correo electrónico</dt>
-    <dd class="col-sm-9">@Model.Email</dd>
-
-    <dt class="col-sm-3">Miembro desde</dt>
-    <dd class="col-sm-9">@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm") (UTC)</dd>
-</dl>
+    <dl class="fp-facts">
+        <div class="fp-fact">
+            <dt>Usuario</dt>
+            <dd>@Model.NombreUsuario</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Correo</dt>
+            <dd>@Model.Email</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Miembro desde</dt>
+            <dd>@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm") (UTC)</dd>
+        </div>
+    </dl>
+</div>
 
 @* Nota: nunca mostramos PasswordHash. *@

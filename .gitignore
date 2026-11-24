@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 *.swp
 
 fairplay.db*
+
+wwwroot/escudos/*
+!wwwroot/escudos/.gitkeep

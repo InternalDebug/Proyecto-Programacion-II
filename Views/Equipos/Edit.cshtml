@@ -1,0 +1,34 @@
+@model FairPlay.ViewModels.EquipoFormViewModel
+@{
+    ViewData["Title"] = "Editar equipo";
+}
+
+<h1 class="h3 mb-3">Editar equipo</h1>
+
+<form asp-controller="Equipos" asp-action="Edit" asp-route-codigoTorneo="@Model.CodigoTorneo" asp-route-idEquipo="@Model.IdEquipo" method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+    @* Solo sirve para volver a mostrar el escudo si el formulario se vuelve a dibujar con errores *@
+    <input type="hidden" asp-for="EscudoActual" />
+
+    @if (!string.IsNullOrEmpty(Model.EscudoActual))
+    {
+        <div class="mb-3">
+            <p class="mb-1">Escudo actual:</p>
+            <img src="@Url.UrlEscudo(Model.EscudoActual)" alt="Escudo actual" width="80" height="80" class="rounded border" />
+            <div class="form-check mt-2">
+                <input asp-for="QuitarEscudo" class="form-check-input" />
+                <label asp-for="QuitarEscudo" class="form-check-label"></label>
+            </div>
+        </div>
+    }
+
+    <partial name="_CamposEquipo" model="Model" />
+
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Details" asp-route-codigoTorneo="@Model.CodigoTorneo" asp-route-idEquipo="@Model.IdEquipo" class="btn btn-link">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

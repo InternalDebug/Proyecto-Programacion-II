@@ -22,6 +22,11 @@ builder.Services.AddScoped<IServicioCuentas, ServicioCuentas>();
 // --- Servicio de gestion de torneos ---
 builder.Services.AddScoped<IServicioTorneos, ServicioTorneos>();
 
+// --- Equipos, jugadores y escudos (Paso 3) ---
+builder.Services.AddScoped<IServicioEquipos, ServicioEquipos>();
+builder.Services.AddScoped<IServicioJugadores, ServicioJugadores>();
+builder.Services.AddSingleton<IAlmacenEscudos, AlmacenEscudos>();
+
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>
@@ -43,6 +48,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// NUEVO (Paso 3): sirve los archivos de wwwroot que se agregan MIENTRAS la app corre (los escudos subidos).
+// MapStaticAssets (más abajo) solo conoce los archivos que existían al compilar, así que sin esta línea
+// los escudos se guardarían bien pero el navegador no podría mostrarlos (error 404).
+app.UseStaticFiles();
+
 app.UseRouting();
 
 app.UseAuthentication();   // NUEVO: debe ir ANTES de UseAuthorization

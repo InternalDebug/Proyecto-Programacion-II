@@ -1,0 +1,17 @@
+@model FairPlay.Models.Jugador
+@{
+    ViewData["Title"] = "Eliminar jugador";
+    var codigoTorneo = Model.Equipo!.Torneo!.Codigo;
+}
+
+<h1 class="h3 mb-3">Eliminar jugador</h1>
+
+<p>
+    ¿Seguro que quieres eliminar a <strong>@Model.NombreCompleto</strong> (dorsal @Model.Dorsal) del equipo
+    <strong>@Model.Equipo.Nombre</strong>?
+</p>
+
+<form asp-controller="Jugadores" asp-action="Delete" asp-route-codigoTorneo="@codigoTorneo" asp-route-idEquipo="@Model.IdEquipo" asp-route-idJugador="@Model.IdJugador" method="post">
+    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+    <a asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@codigoTorneo" asp-route-idEquipo="@Model.IdEquipo" class="btn btn-link">Cancelar</a>
+</form>
