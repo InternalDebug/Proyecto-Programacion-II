@@ -1,4 +1,11 @@
-﻿<!DOCTYPE html>
+@{
+    // Controlador y acción actuales: sirven para marcar como activo el enlace de la barra
+    var controlador = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var accion = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+
+    string Activo(bool condicion) => condicion ? "active" : string.Empty;
+}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -11,28 +18,28 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">FairPlay</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-md fp-nav">
+            <div class="container">
+                <a class="navbar-brand fp-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="fp-brand__mark" aria-hidden="true"></span>FairPlay
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navPrincipal"
+                        aria-controls="navPrincipal" aria-expanded="false" aria-label="Mostrar u ocultar el menú">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+
+                <div class="collapse navbar-collapse" id="navPrincipal">
+                    <ul class="navbar-nav me-auto gap-md-1 mt-3 mt-md-0">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link @Activo(controlador == "Home" && accion == "Index")" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Torneos" asp-action="Buscar">Buscar torneo</a>
+                            <a class="nav-link @Activo(controlador == "Torneos" && accion == "Buscar")" asp-controller="Torneos" asp-action="Buscar">Buscar torneo</a>
                         </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Torneos" asp-action="Index">Mis torneos</a>
+                                <a class="nav-link @Activo(controlador == "Torneos" && accion != "Buscar")" asp-controller="Torneos" asp-action="Index">Mis torneos</a>
                             </li>
                             @* "Solicitudes de inscripción": solo aparece si el usuario organiza torneos con aprobación *@
                             @await Component.InvokeAsync("SolicitudesNav")
@@ -42,28 +49,28 @@
                     </ul>
 
                     @* Zona de cuenta: cambia según haya o no sesión iniciada *@
-                    <ul class="navbar-nav">
+                    <ul class="navbar-nav align-items-md-center gap-md-2 mt-2 mt-md-0">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Perfil">
-                                    Hola, <strong>@User.Identity.Name</strong>
+                                <a class="nav-link fp-user @Activo(controlador == "Cuenta" && accion == "Perfil")" asp-controller="Cuenta" asp-action="Perfil">
+                                    <strong>@User.Identity.Name</strong>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 @* Cerrar sesión es un POST con token antiforgery (lo agrega el form automáticamente) *@
-                                <form asp-controller="Cuenta" asp-action="Logout" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-link nav-link text-dark">Cerrar sesión</button>
+                                <form asp-controller="Cuenta" asp-action="Logout" method="post">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Cerrar sesión</button>
                                 </form>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a>
+                                <a class="nav-link @Activo(controlador == "Cuenta" && accion == "Login")" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Cuenta" asp-action="Registro">Crear cuenta</a>
+                                <a class="btn btn-primary btn-sm" asp-controller="Cuenta" asp-action="Registro">Crear cuenta</a>
                             </li>
                         }
                     </ul>
@@ -71,8 +78,9 @@
             </div>
         </nav>
     </header>
+
     <div class="container">
-        <main role="main" class="pb-3">
+        <main role="main" class="container-main pb-3">
             @* Mensaje temporal (TempData) que dejan los controladores, por ejemplo tras registrarse *@
             @if (TempData["Mensaje"] is string mensaje)
             {
@@ -95,9 +103,10 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - FairPlay - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="fp-footer">
+        <div class="container d-flex justify-content-between">
+            <span>&copy; 2026 · FairPlay</span>
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacidad</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

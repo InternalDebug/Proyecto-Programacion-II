@@ -7,145 +7,168 @@
 
     // Estado al que el organizador puede pasar ahora (null si ya no se puede abrir ni cerrar)
     var siguiente = ReglasTorneo.EstadoSiguiente(t.Estado);
-    var textoBoton = siguiente == EstadoTorneo.Inscripcion ? "Abrir inscripciones" : "Cerrar inscripciones (volver a borrador)";
+    var textoBoton = siguiente == EstadoTorneo.Inscripcion ? "Abrir inscripciones" : "Cerrar inscripciones";
 }
 
-<h1 class="h3 mb-1">@t.Nombre</h1>
-<p class="text-muted">Código: <code>@t.Codigo</code></p>
-
-<dl class="row">
-    <dt class="col-sm-3">Descripción</dt>
-    <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(t.Descripcion) ? "—" : t.Descripcion)</dd>
-
-    <dt class="col-sm-3">Organizador</dt>
-    @* Solo el nombre de usuario: nunca el correo ni el hash *@
-    <dd class="col-sm-9">@t.Organizador?.NombreUsuario</dd>
-
-    <dt class="col-sm-3">Formato</dt>
-    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.Formato)</dd>
-
-    <dt class="col-sm-3">Estado</dt>
-    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.Estado)</dd>
-
-    <dt class="col-sm-3">Inscripción</dt>
-    <dd class="col-sm-9">@Html.DisplayFor(m => m.Torneo.ModoInscripcion)</dd>
-
-    <dt class="col-sm-3">Máximo de equipos</dt>
-    <dd class="col-sm-9">@(t.MaxEquipos?.ToString() ?? "Sin límite")</dd>
-
-    <dt class="col-sm-3">Puntos</dt>
-    <dd class="col-sm-9">Victoria: @t.PuntosVictoria · Empate: @t.PuntosEmpate · Derrota: @t.PuntosDerrota</dd>
-
-    <dt class="col-sm-3">Fecha de inicio</dt>
-    <dd class="col-sm-9">@(t.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</dd>
-
-    <dt class="col-sm-3">Fecha de fin</dt>
-    <dd class="col-sm-9">@(t.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
-</dl>
-
-@* Los partidos son públicos para quien conozca el código del torneo *@
-<p>
-    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
-
-    @* Copa (Paso 6, entrega C): la llave también es pública y existe desde que el torneo está en curso. *@
-    @if (t.Formato == FormatoTorneo.Copa && (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado))
-    {
-        <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver llave</a>
-    }
-</p>
-
-@* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
 @if (Model.EsOrganizador)
 {
-    <p>
-        <a asp-action="Edit" asp-route-id="@t.Codigo" class="btn btn-primary">Editar</a>
-        <a asp-action="Delete" asp-route-id="@t.Codigo" class="btn btn-outline-danger">Eliminar</a>
-
-        @if (siguiente is not null)
-        {
-            @if (Model.OmitirAvisoCambioEstado)
-            {
-                @* Marcó "No mostrar de nuevo": el botón cambia el estado directamente (POST) *@
-                <form asp-action="CambiarEstado" asp-route-id="@t.Codigo" method="post" class="d-inline">
-                    <input type="hidden" name="nuevoEstado" value="@siguiente" />
-                    <button type="submit" class="btn btn-success">@textoBoton</button>
-                </form>
-            }
-            else
-            {
-                @* Primero muestra la pantalla informativa (con la casilla "No mostrar de nuevo") *@
-                <a asp-action="ConfirmarEstado" asp-route-id="@t.Codigo" asp-route-nuevoEstado="@siguiente" class="btn btn-success">@textoBoton</a>
-            }
-        }
-    </p>
-
-    @* Calendario (Paso 6): iniciar el torneo, o gestionar el calendario ya generado. *@
-    <p>
-        @if (t.Estado == EstadoTorneo.Inscripcion)
-        {
-            @if (ReglasCalendario.FormatoDisponible(t.Formato))
-            {
-                <a asp-controller="Calendario" asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-warning">
-                    @(t.Formato == FormatoTorneo.Copa ? "Iniciar torneo (generar llave)" : "Iniciar torneo (generar calendario)")
-                </a>
-            }
-            else
-            {
-                <span class="text-muted">El calendario del formato @ReglasCalendario.NombreFormato(t.Formato) estará disponible próximamente.</span>
-            }
-        }
-        else if (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado)
-        {
-            <a asp-controller="Calendario" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Gestionar calendario</a>
-        }
-    </p>
-}
-
-<h2 class="h4 mt-4">Equipos</h2>
-
-@if (Model.PuedeInscribir)
-{
-    <p>
-        <a asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@t.Codigo" class="btn btn-primary">Inscribir equipo</a>
-    </p>
-}
-else if (User.Identity?.IsAuthenticated != true && t.Estado == EstadoTorneo.Inscripcion && t.ModoInscripcion != ModoInscripcion.Cerrada)
-{
-    <p class="text-muted">
-        <a asp-controller="Cuenta" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Inicia sesión</a>
-        para inscribir tu equipo.
-    </p>
-}
-
-@if (Model.Equipos.Count == 0)
-{
-    <p class="text-muted">Todavía no hay equipos inscritos.</p>
+    <a asp-action="Index" class="fp-back">&larr; Mis torneos</a>
 }
 else
 {
-    <table class="table align-middle">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Equipo</th>
-                <th>Ciudad</th>
-                <th>Inscripción</th>
-                <th>Jugadores</th>
-                <th>Responsable</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var e in Model.Equipos)
-            {
-                <tr>
-                    <td><img src="@Url.UrlEscudo(e.LogoEscudo)" alt="Escudo de @e.Nombre" width="32" height="32" class="rounded border" /></td>
-                    <td><a asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idEquipo="@e.IdEquipo">@e.Nombre</a></td>
-                    <td>@(string.IsNullOrWhiteSpace(e.Ciudad) ? "—" : e.Ciudad)</td>
-                    <td>@Html.DisplayFor(m => e.EstadoInscripcion)</td>
-                    <td>@e.Jugadores.Count</td>
-                    <td>@e.Responsable?.NombreUsuario</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <a asp-action="Buscar" class="fp-back">&larr; Buscar torneo</a>
 }
+
+<section class="fp-hero-head">
+    <div class="fp-eyebrow">Torneo</div>
+    <h1>@t.Nombre</h1>
+    <div class="fp-hero-head__meta">
+        <code>@t.Codigo</code>
+        <span class="fp-badge fp-badge--formato">@Html.DisplayFor(m => m.Torneo.Formato)</span>
+        <partial name="_EstadoBadge" model="t.Estado" />
+    </div>
+
+    @* Acciones para cualquier visitante: los partidos y la llave son públicos para quien conozca el código *@
+    <div class="fp-actions">
+        <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-secondary">Ver partidos</a>
+
+        @* Copa: la llave también es pública y existe desde que el torneo está en curso. *@
+        @if (t.Formato == FormatoTorneo.Copa && (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado))
+        {
+            <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-secondary">Ver llave</a>
+        }
+
+        @* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
+        @if (Model.EsOrganizador)
+        {
+            <span class="fp-actions__sep" aria-hidden="true"></span>
+
+            @if (t.Estado == EstadoTorneo.Inscripcion)
+            {
+                @if (ReglasCalendario.FormatoDisponible(t.Formato))
+                {
+                    <a asp-controller="Calendario" asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-primary">
+                        @(t.Formato == FormatoTorneo.Copa ? "Iniciar torneo (generar llave)" : "Iniciar torneo (generar calendario)")
+                    </a>
+                }
+            }
+            else if (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado)
+            {
+                <a asp-controller="Calendario" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-primary">Gestionar calendario</a>
+            }
+
+            @if (siguiente is not null)
+            {
+                @if (Model.OmitirAvisoCambioEstado)
+                {
+                    @* Marcó "No mostrar de nuevo": el botón cambia el estado directamente (POST) *@
+                    <form asp-action="CambiarEstado" asp-route-id="@t.Codigo" method="post">
+                        <input type="hidden" name="nuevoEstado" value="@siguiente" />
+                        <button type="submit" class="btn btn-outline-secondary">@textoBoton</button>
+                    </form>
+                }
+                else
+                {
+                    @* Primero muestra la pantalla informativa (con la casilla "No mostrar de nuevo") *@
+                    <a asp-action="ConfirmarEstado" asp-route-id="@t.Codigo" asp-route-nuevoEstado="@siguiente" class="btn btn-outline-secondary">@textoBoton</a>
+                }
+            }
+
+            <a asp-action="Edit" asp-route-id="@t.Codigo" class="btn btn-outline-secondary">Editar</a>
+            <a asp-action="Delete" asp-route-id="@t.Codigo" class="btn btn-outline-danger">Eliminar</a>
+        }
+    </div>
+
+    @if (Model.EsOrganizador && t.Estado == EstadoTorneo.Inscripcion && !ReglasCalendario.FormatoDisponible(t.Formato))
+    {
+        <p class="text-muted small mt-3 mb-0">El calendario del formato @ReglasCalendario.NombreFormato(t.Formato) estará disponible próximamente.</p>
+    }
+</section>
+
+<section class="fp-panel">
+    <h2 class="fp-section-title">Información</h2>
+    <dl class="fp-facts">
+        <div class="fp-fact">
+            <dt>Descripción</dt>
+            <dd>@(string.IsNullOrWhiteSpace(t.Descripcion) ? "—" : t.Descripcion)</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Organizador</dt>
+            @* Solo el nombre de usuario: nunca el correo ni el hash *@
+            <dd>@t.Organizador?.NombreUsuario</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Inscripción</dt>
+            <dd>@Html.DisplayFor(m => m.Torneo.ModoInscripcion)</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Máximo de equipos</dt>
+            <dd>@(t.MaxEquipos?.ToString() ?? "Sin límite")</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Puntos</dt>
+            <dd class="fp-num">Victoria @t.PuntosVictoria · Empate @t.PuntosEmpate · Derrota @t.PuntosDerrota</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Fechas</dt>
+            <dd class="fp-num">@(t.FechaInicio?.ToString("dd/MM/yyyy") ?? "—") &rarr; @(t.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
+        </div>
+    </dl>
+</section>
+
+<section class="fp-block">
+    <div class="fp-block__head">
+        <h2>Equipos <span class="fp-count fp-count--plain">@Model.Equipos.Count</span></h2>
+
+        @if (Model.PuedeInscribir)
+        {
+            <a asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@t.Codigo" class="btn btn-primary btn-sm">Inscribir equipo</a>
+        }
+    </div>
+
+    @if (User.Identity?.IsAuthenticated != true && t.Estado == EstadoTorneo.Inscripcion && t.ModoInscripcion != ModoInscripcion.Cerrada)
+    {
+        <div class="alert alert-info">
+            <a asp-controller="Cuenta" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Inicia sesión</a>
+            para inscribir tu equipo.
+        </div>
+    }
+
+    @if (Model.Equipos.Count == 0)
+    {
+        <div class="fp-empty">
+            <div class="fp-empty__ball" aria-hidden="true"></div>
+            <p class="mb-0">Todavía no hay equipos inscritos.</p>
+        </div>
+    }
+    else
+    {
+        <div class="fp-table-wrap">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 56px;"></th>
+                        <th>Equipo</th>
+                        <th>Ciudad</th>
+                        <th>Inscripción</th>
+                        <th class="text-end">Jugadores</th>
+                        <th>Responsable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.Equipos)
+                    {
+                        <tr>
+                            <td><img src="@Url.UrlEscudo(e.LogoEscudo)" alt="Escudo de @e.Nombre" class="fp-crest fp-crest--sm" /></td>
+                            <td><a class="fw-semibold" asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idEquipo="@e.IdEquipo">@e.Nombre</a></td>
+                            <td>@(string.IsNullOrWhiteSpace(e.Ciudad) ? "—" : e.Ciudad)</td>
+                            <td><partial name="_InscripcionBadge" model="e.EstadoInscripcion" /></td>
+                            <td class="text-end fp-num">@e.Jugadores.Count</td>
+                            <td>@e.Responsable?.NombreUsuario</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

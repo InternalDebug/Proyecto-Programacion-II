@@ -11,13 +11,17 @@
     var textoConfirmar = regenerar
         ? "Se borrará el calendario actual y se generará uno nuevo. ¿Continuar?"
         : "Se iniciará el torneo y se cerrarán las inscripciones. ¿Continuar?";
+    var textoAccion = regenerar ? "Regenerar calendario" : "Iniciar torneo y generar calendario";
 }
 
-<p class="mb-1">
-    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
-</p>
+<a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo" class="fp-back">&larr; @t.Nombre</a>
 
-<h1 class="h3 mb-3">@(regenerar ? "Regenerar calendario" : "Iniciar torneo")</h1>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">@(regenerar ? "Calendario" : "Arranque")</div>
+        <h1>@(regenerar ? "Regenerar calendario" : "Iniciar torneo")</h1>
+    </div>
+</div>
 
 @* ---------- Qué va a pasar ---------- *@
 <div class="alert alert-info">
@@ -61,97 +65,101 @@
 {
     <form asp-action="Iniciar" asp-route-codigoTorneo="@t.Codigo" method="post">
 
-        <h2 class="h5">Sorteo</h2>
-        <p class="text-muted">
-            @if (esCopa)
-            {
-                <text>
-                    La <strong>posición</strong> (semilla) decide los cruces: la 1 enfrenta a la última y la 2 a la penúltima, y la 1 y la 2
-                    solo pueden verse en la final. Si el número de equipos no es potencia de 2, las <strong>mejores posiciones pasan directo</strong>
-                    a la siguiente ronda.
-                </text>
-            }
-            else
-            {
-                <text>La <strong>posición</strong> decide los emparejamientos: por ejemplo, la 1 enfrenta a la última en la primera jornada.</text>
-            }
-            Puedes <strong>sortear al azar</strong> o escribir tú mismo las posiciones (semillas). Para intercambiar dos equipos,
-            cambia sus números. Cada número del 1 al @Model.Equipos.Count debe usarse una sola vez.
-        </p>
-
-        <table class="table align-middle">
-            <thead>
-                <tr>
-                    <th style="width: 120px;">Posición</th>
-                    <th>Equipo</th>
-                    <th>Jugadores</th>
-                    <th>Requisitos</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (int i = 0; i < Model.Equipos.Count; i++)
+        <section class="fp-panel">
+            <h2 class="fp-section-title">Sorteo</h2>
+            <p class="text-muted small">
+                @if (esCopa)
                 {
-                    var e = Model.Equipos[i];
-                    <tr>
-                        <td>
-                            <input type="hidden" name="Posiciones[@(i)].IdEquipo" value="@e.IdEquipo" />
-                            <input type="number" name="Posiciones[@(i)].Posicion" value="@e.Posicion"
-                                   min="1" max="@Model.Equipos.Count" class="form-control form-control-sm"
-                                   aria-label="Posición de @e.Nombre" />
-                        </td>
-                        <td>@e.Nombre</td>
-                        <td>@e.Jugadores</td>
-                        <td>
-                            @if (e.Problemas.Count == 0)
-                            {
-                                <span class="text-success">Completo</span>
-                            }
-                            else
-                            {
-                                <ul class="text-danger small mb-0 ps-3">
-                                    @foreach (var problema in e.Problemas)
-                                    {
-                                        <li>@problema</li>
-                                    }
-                                </ul>
-                            }
-                        </td>
-                    </tr>
+                    <text>
+                        La <strong>posición</strong> (semilla) decide los cruces: la 1 enfrenta a la última y la 2 a la penúltima, y la 1 y la 2
+                        solo pueden verse en la final. Si el número de equipos no es potencia de 2, las <strong>mejores posiciones pasan directo</strong>
+                        a la siguiente ronda.
+                    </text>
                 }
-            </tbody>
-        </table>
+                else
+                {
+                    <text>La <strong>posición</strong> decide los emparejamientos: por ejemplo, la 1 enfrenta a la última en la primera jornada.</text>
+                }
+                Puedes <strong>sortear al azar</strong> o escribir tú mismo las posiciones (semillas). Para intercambiar dos equipos,
+                cambia sus números. Cada número del 1 al @Model.Equipos.Count debe usarse una sola vez.
+            </p>
 
-        <div class="form-check mb-3">
-            @* El checkbox va ANTES del hidden: así, si está marcado, llega "true" primero y se usa ese valor. *@
-            <input type="checkbox" class="form-check-input" id="idaYVuelta" name="IdaYVuelta" value="true" checked="@Model.IdaYVuelta" />
-            <input type="hidden" name="IdaYVuelta" value="false" />
-            <label class="form-check-label" for="idaYVuelta">
-                @(esCopa
-                    ? "Ida y vuelta (cada cruce se juega a dos partidos; la final es siempre a partido único)"
-                    : "Ida y vuelta (cada equipo juega dos veces contra cada rival)")
-            </label>
-        </div>
+            <div class="fp-table-wrap">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">Posición</th>
+                            <th>Equipo</th>
+                            <th class="text-end">Jugadores</th>
+                            <th>Requisitos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Equipos.Count; i++)
+                        {
+                            var e = Model.Equipos[i];
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="Posiciones[@(i)].IdEquipo" value="@e.IdEquipo" />
+                                    <input type="number" name="Posiciones[@(i)].Posicion" value="@e.Posicion"
+                                           min="1" max="@Model.Equipos.Count" class="form-control form-control-sm text-center"
+                                           aria-label="Posición de @e.Nombre" />
+                                </td>
+                                <td class="fw-semibold">@e.Nombre</td>
+                                <td class="text-end fp-num">@e.Jugadores</td>
+                                <td>
+                                    @if (e.Problemas.Count == 0)
+                                    {
+                                        <span class="fp-badge fp-badge--aprobado">Completo</span>
+                                    }
+                                    else
+                                    {
+                                        <ul class="text-danger small mb-0 ps-3">
+                                            @foreach (var problema in e.Problemas)
+                                            {
+                                                <li>@problema</li>
+                                            }
+                                        </ul>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="d-flex flex-wrap gap-2">
-            @* Este botón usa OTRA acción del controlador (Sortear) pero envía el mismo formulario. *@
-            <button type="submit" class="btn btn-outline-secondary" asp-action="Sortear" asp-route-codigoTorneo="@t.Codigo">Sortear al azar</button>
+            <div class="form-check mt-4">
+                @* El checkbox va ANTES del hidden: así, si está marcado, llega "true" primero y se usa ese valor. *@
+                <input type="checkbox" class="form-check-input" id="idaYVuelta" name="IdaYVuelta" value="true" checked="@Model.IdaYVuelta" />
+                <input type="hidden" name="IdaYVuelta" value="false" />
+                <label class="form-check-label" for="idaYVuelta">
+                    @(esCopa
+                        ? "Ida y vuelta (cada cruce se juega a dos partidos; la final es siempre a partido único)"
+                        : "Ida y vuelta (cada equipo juega dos veces contra cada rival)")
+                </label>
+            </div>
 
-            @if (Model.PuedeIniciar)
+            <div class="fp-form-actions">
+                @* Este botón usa OTRA acción del controlador (Sortear) pero envía el mismo formulario. *@
+                <button type="submit" class="btn btn-outline-secondary" asp-action="Sortear" asp-route-codigoTorneo="@t.Codigo">Sortear al azar</button>
+
+                @if (Model.PuedeIniciar)
+                {
+                    <button type="submit" class="btn btn-primary"
+                            onclick="return confirm('@textoConfirmar');">
+                        @textoAccion
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-primary" disabled>@textoAccion</button>
+                }
+            </div>
+
+            @if (!Model.PuedeIniciar)
             {
-                <button type="submit" class="btn btn-success"
-                        onclick="return confirm('@textoConfirmar');">
-                    @(regenerar ? "Regenerar calendario" : "Iniciar torneo y generar calendario")
-                </button>
+                <p class="text-muted small mt-3 mb-0">Corrige los requisitos marcados en rojo para poder continuar.</p>
             }
-            else
-            {
-                <button type="button" class="btn btn-success" disabled>@(regenerar ? "Regenerar calendario" : "Iniciar torneo y generar calendario")</button>
-            }
-        </div>
-
-        @if (!Model.PuedeIniciar)
-        {
-            <p class="text-muted small mt-2">Corrige los requisitos marcados en rojo para poder continuar.</p>
-        }
+        </section>
     </form>
 }

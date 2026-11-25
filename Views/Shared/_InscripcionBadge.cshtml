@@ -1,0 +1,3 @@
+@* Insignia del estado de inscripción de un equipo. Recibe un EstadoInscripcion. *@
+@model FairPlay.Models.Enums.EstadoInscripcion
+<span class="fp-badge fp-badge--@Model.ToString().ToLowerInvariant()">@Html.DisplayFor(m => m)</span>

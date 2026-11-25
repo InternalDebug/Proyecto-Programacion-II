@@ -18,7 +18,7 @@
         con sus jugadores y partidos. Esta acción no se puede deshacer.
     </div>
 
-    <form asp-action="Delete" asp-route-id="@Model.Codigo" method="post" class="d-flex align-items-center gap-2">
+    <form asp-action="Delete" asp-route-id="@Model.Codigo" method="post" class="fp-actions">
         <button type="submit" class="btn btn-danger">Sí, eliminar</button>
         <a asp-action="Details" asp-route-id="@Model.Codigo" class="btn btn-link">Cancelar</a>
     </form>

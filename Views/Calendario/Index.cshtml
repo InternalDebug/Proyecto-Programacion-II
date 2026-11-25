@@ -9,34 +9,41 @@
     bool editable = t.Estado != EstadoTorneo.Finalizado;
 }
 
-<p class="mb-1">
-    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
-</p>
+<a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo" class="fp-back">&larr; @t.Nombre</a>
 
-<h1 class="h3 mb-1">Gestionar calendario</h1>
-<p class="text-muted">Torneo: @t.Nombre · <code>@t.Codigo</code></p>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Organizador</div>
+        <h1>Gestionar calendario</h1>
+        <div class="fp-code-chip mt-2">@t.Nombre · <code>@t.Codigo</code></div>
+    </div>
 
-<p class="d-flex flex-wrap gap-2 align-items-center">
-    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
+    <div class="fp-actions">
+        <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-secondary">Ver partidos</a>
 
-    @if (t.Formato == FormatoTorneo.Copa)
-    {
-        <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver llave</a>
-    }
+        @if (t.Formato == FormatoTorneo.Copa)
+        {
+            <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-secondary">Ver llave</a>
+        }
 
-    @if (Model.PuedeRegenerar)
-    {
-        <a asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-danger">Regenerar calendario</a>
-    }
-    else if (Model.MotivoNoRegenerar is not null)
-    {
-        <span class="text-muted small">@Model.MotivoNoRegenerar</span>
-    }
-</p>
+        @if (Model.PuedeRegenerar)
+        {
+            <a asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-danger">Regenerar calendario</a>
+        }
+    </div>
+</div>
+
+@if (!Model.PuedeRegenerar && Model.MotivoNoRegenerar is not null)
+{
+    <div class="alert alert-warning">@Model.MotivoNoRegenerar</div>
+}
 
 @if (Model.Rondas.Count == 0)
 {
-    <p class="text-muted">Este torneo todavía no tiene calendario. Se genera al iniciar el torneo.</p>
+    <div class="fp-empty">
+        <div class="fp-empty__ball" aria-hidden="true"></div>
+        <p class="mb-0">Este torneo todavía no tiene calendario. Se genera al iniciar el torneo.</p>
+    </div>
 }
 else
 {
@@ -48,34 +55,33 @@ else
     @foreach (var r in Model.Rondas)
     {
         var fechaInput = r.FechaInicio?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+        var resumen = $"{r.Partidos} partido(s)" + (r.Descansos > 0 ? $" · {r.Descansos} descanso(s)" : string.Empty);
 
-        <div class="border rounded p-3 mb-2">
-            @if (editable)
-            {
-                <form asp-action="EditarRonda" asp-route-codigoTorneo="@t.Codigo" asp-route-idRonda="@r.IdRonda" method="post" class="row g-2 align-items-end">
-                    <div class="col-md-4">
-                        <label for="nombre-@r.IdRonda" class="form-label mb-0 small">Nombre</label>
-                        <input type="text" id="nombre-@r.IdRonda" name="Nombre" value="@r.Nombre" maxlength="60" class="form-control form-control-sm" required />
-                    </div>
-                    <div class="col-md-3">
-                        <label for="fecha-@r.IdRonda" class="form-label mb-0 small">Fecha de inicio (opcional)</label>
-                        <input type="date" id="fecha-@r.IdRonda" name="FechaInicio" value="@fechaInput" class="form-control form-control-sm" />
-                    </div>
-                    <div class="col-md-3 text-muted small">
-                        @r.Partidos partido(s)@(r.Descansos > 0 ? $" · {r.Descansos} descanso(s)" : string.Empty)
-                    </div>
-                    <div class="col-md-2 text-md-end">
-                        <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
-                    </div>
-                </form>
-            }
-            else
-            {
+        @if (editable)
+        {
+            <form asp-action="EditarRonda" asp-route-codigoTorneo="@t.Codigo" asp-route-idRonda="@r.IdRonda" method="post" class="fp-round">
+                <div>
+                    <label for="nombre-@r.IdRonda" class="form-label">Nombre</label>
+                    <input type="text" id="nombre-@r.IdRonda" name="Nombre" value="@r.Nombre" maxlength="60" class="form-control" required />
+                </div>
+                <div>
+                    <label for="fecha-@r.IdRonda" class="form-label">Fecha de inicio</label>
+                    <input type="date" id="fecha-@r.IdRonda" name="FechaInicio" value="@fechaInput" class="form-control" />
+                </div>
+                <div class="fp-round__info">@resumen</div>
+                <div>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="fp-round fp-round--readonly">
                 <strong>@r.Nombre</strong>
-                <span class="text-muted small">
-                    · @(r.FechaInicio?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "sin fecha") · @r.Partidos partido(s)
+                <span class="text-muted small fp-num">
+                    @(r.FechaInicio?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "sin fecha") · @resumen
                 </span>
-            }
-        </div>
+            </div>
+        }
     }
 }

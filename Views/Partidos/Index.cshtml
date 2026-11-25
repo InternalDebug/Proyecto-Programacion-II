@@ -5,16 +5,22 @@
     ViewData["Title"] = "Partidos - " + t.Nombre;
 }
 
-<h1 class="h3 mb-1">Partidos</h1>
-<p class="text-muted">
-    Torneo:
-    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">@t.Nombre</a>
-    · <code>@t.Codigo</code>
-</p>
+<a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo" class="fp-back">&larr; @t.Nombre</a>
+
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Calendario</div>
+        <h1>Partidos</h1>
+        <div class="fp-code-chip mt-2">@t.Nombre · <code>@t.Codigo</code></div>
+    </div>
+</div>
 
 @if (Model.Partidos.Count == 0)
 {
-    <p class="text-muted">Este torneo todavía no tiene partidos programados.</p>
+    <div class="fp-empty">
+        <div class="fp-empty__ball" aria-hidden="true"></div>
+        <p class="mb-0">Este torneo todavía no tiene partidos programados.</p>
+    </div>
 }
 
 @* Se agrupa por el id de la ronda (y no por el objeto Ronda) porque cada partido trae su propia copia de la ronda. *@
@@ -23,53 +29,57 @@
     var r = ronda.First().Ronda!;
     var titulo = $"{r.Fase?.Nombre} · {r.Nombre}" + (r.Grupo is null ? string.Empty : $" · {r.Grupo.Nombre}");
 
-    <h2 class="h5 mt-4">@titulo</h2>
+    <section class="fp-fixture">
+        <h2 class="fp-fixture__title">@titulo</h2>
 
-    <table class="table align-middle">
-        <thead>
-            <tr>
-                <th>Local</th>
-                <th class="text-center">Marcador</th>
-                <th>Visitante</th>
-                <th>Fecha y hora</th>
-                <th>Estado</th>
-                <th>Árbitro</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var p in ronda)
-            {
-                <tr>
-                    <td>@p.Local?.Nombre</td>
-                    <td class="text-center fw-bold">
-                        @ReglasPartido.Marcador(p)
-                        @if (p.PenalesLocal.HasValue)
-                        {
-                            <div class="small fw-normal text-muted">@ReglasEliminatoria.TextoPenales(p)</div>
-                        }
-                        @if (p.IdCruce.HasValue && p.NumeroPartido == 2)
-                        {
-                            <div class="small fw-normal text-muted">Vuelta</div>
-                        }
-                    </td>
-                    <td>@(p.EsDescanso ? "—" : p.Visitante?.Nombre)</td>
-                    <td>@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</td>
-                    <td>
-                        @if (!p.EsDescanso)
-                        {
-                            <partial name="_EstadoPartidoBadge" model="p.Estado" />
-                        }
-                    </td>
-                    <td>@(p.Arbitro?.NombreUsuario ?? "—")</td>
-                    <td>
-                        @if (!p.EsDescanso)
-                        {
-                            <a asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        <div class="fp-table-wrap">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th class="text-end">Local</th>
+                        <th class="text-center">Marcador</th>
+                        <th>Visitante</th>
+                        <th>Fecha y hora</th>
+                        <th>Estado</th>
+                        <th>Árbitro</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in ronda)
+                    {
+                        <tr>
+                            <td class="text-end fw-semibold">@p.Local?.Nombre</td>
+                            <td class="fp-score">
+                                @ReglasPartido.Marcador(p)
+                                @if (p.PenalesLocal.HasValue)
+                                {
+                                    <small>@ReglasEliminatoria.TextoPenales(p)</small>
+                                }
+                                @if (p.IdCruce.HasValue && p.NumeroPartido == 2)
+                                {
+                                    <small>Vuelta</small>
+                                }
+                            </td>
+                            <td class="fw-semibold">@(p.EsDescanso ? "—" : p.Visitante?.Nombre)</td>
+                            <td class="fp-num text-nowrap">@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</td>
+                            <td>
+                                @if (!p.EsDescanso)
+                                {
+                                    <partial name="_EstadoPartidoBadge" model="p.Estado" />
+                                }
+                            </td>
+                            <td>@(p.Arbitro?.NombreUsuario ?? "—")</td>
+                            <td class="fp-td-actions">
+                                @if (!p.EsDescanso)
+                                {
+                                    <a class="fp-icon-link" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 }

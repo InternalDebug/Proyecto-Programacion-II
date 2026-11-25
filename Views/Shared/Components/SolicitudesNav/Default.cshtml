@@ -1,12 +1,12 @@
-@* Enlace "Solicitudes de inscripción" de la barra de navegación (lo dibuja SolicitudesNavViewComponent) *@
+@* Enlace "Solicitudes" de la barra de navegación (lo dibuja SolicitudesNavViewComponent) *@
 @model FairPlay.Services.ResumenSolicitudes
 
 <li class="nav-item">
-    <a class="nav-link text-dark" asp-controller="Solicitudes" asp-action="Index">
-        Solicitudes de inscripción
+    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Solicitudes" ? "active" : "")" asp-controller="Solicitudes" asp-action="Index">
+        Solicitudes
         @if (Model.Pendientes > 0)
         {
-            <span class="badge bg-danger">@Model.Pendientes</span>
+            <span class="fp-count fp-count--alert" title="Pendientes de decisión">@Model.Pendientes</span>
         }
     </a>
 </li>

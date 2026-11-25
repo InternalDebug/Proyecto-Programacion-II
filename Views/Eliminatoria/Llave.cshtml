@@ -6,37 +6,40 @@
     ViewData["Title"] = "Llave - " + t.Nombre;
 }
 
-<p class="mb-1">
-    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
-</p>
+<a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo" class="fp-back">&larr; @t.Nombre</a>
 
-<h1 class="h3 mb-1">Llave</h1>
-<p class="text-muted">
-    Torneo: @t.Nombre · <code>@t.Codigo</code> ·
-    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo">Ver todos los partidos</a>
-</p>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Eliminatoria</div>
+        <h1>Llave</h1>
+        <div class="fp-code-chip mt-2">@t.Nombre · <code>@t.Codigo</code></div>
+    </div>
+    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-secondary">Ver todos los partidos</a>
+</div>
 
 @if (Model.Campeon is not null)
 {
-    <div class="alert alert-success">
-        <strong>Campeón: @Model.Campeon.Nombre</strong>
+    <div class="fp-champion">
+        <span aria-hidden="true">🏆</span>
+        <span>Campeón: @Model.Campeon.Nombre</span>
     </div>
 }
 
 @if (Model.Rondas.Count == 0)
 {
-    <p class="text-muted">
-        Este torneo todavía no tiene eliminatoria. La llave se genera cuando el organizador inicia el torneo.
-    </p>
+    <div class="fp-empty">
+        <div class="fp-empty__ball" aria-hidden="true"></div>
+        <p class="mb-0">Este torneo todavía no tiene eliminatoria. La llave se genera cuando el organizador inicia el torneo.</p>
+    </div>
 }
 else
 {
     @* Las rondas van una al lado de la otra (con desplazamiento horizontal en pantallas pequeñas). *@
-    <div class="row g-3 flex-nowrap overflow-auto pb-2">
+    <div class="fp-bracket">
         @foreach (var ronda in Model.Rondas.OrderBy(r => r.Numero))
         {
-            <div class="col-11 col-md-6 col-xl-4">
-                <h2 class="h6 text-uppercase text-muted">@ronda.Nombre</h2>
+            <div class="fp-bracket__round">
+                <h2>@ronda.Nombre</h2>
 
                 @foreach (var c in ronda.Cruces.OrderBy(c => c.Posicion))
                 {
@@ -52,51 +55,47 @@ else
                     // Un partido por "Ida"/"Vuelta" si hay dos; "Partido" si hay uno solo.
                     bool dosPartidos = partidos.Count > 1;
 
-                    <div class="card mb-3">
-                        <div class="card-body p-3">
-                            @if (pasaDirecto)
-                            {
-                                <div><strong>@nombreA</strong></div>
-                                <div class="small text-muted">Pasa directo a la siguiente ronda</div>
-                            }
-                            else
-                            {
-                                <div class="@(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoA ? "fw-bold" : string.Empty)">@nombreA</div>
-                                <div class="small text-muted">vs</div>
-                                <div class="@(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoB ? "fw-bold" : string.Empty)">@nombreB</div>
-                            }
+                    <div class="fp-tie">
+                        @if (pasaDirecto)
+                        {
+                            <div class="fp-tie__team"><span>@nombreA</span></div>
+                            <div class="small text-muted">Pasa directo a la siguiente ronda</div>
+                        }
+                        else
+                        {
+                            <div class="fp-tie__team @(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoA ? "fp-tie__team--win" : string.Empty)"><span>@nombreA</span></div>
+                            <div class="fp-tie__team @(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoB ? "fp-tie__team--win" : string.Empty)"><span>@nombreB</span></div>
+                        }
 
-                            @foreach (var p in partidos)
-                            {
-                                var local = p.IdLocal == c.IdEquipoA ? nombreA : nombreB;
-                                var visitante = p.IdLocal == c.IdEquipoA ? nombreB : nombreA;
-                                var etiqueta = dosPartidos ? (p.NumeroPartido == 1 ? "Ida" : "Vuelta") : "Partido";
+                        @foreach (var p in partidos)
+                        {
+                            var local = p.IdLocal == c.IdEquipoA ? nombreA : nombreB;
+                            var visitante = p.IdLocal == c.IdEquipoA ? nombreB : nombreA;
+                            var etiqueta = dosPartidos ? (p.NumeroPartido == 1 ? "Ida" : "Vuelta") : "Partido";
 
-                                <hr class="my-2" />
-                                <div class="small">
-                                    <span class="text-muted">@etiqueta:</span>
-                                    @local <strong>@ReglasPartido.Marcador(p)</strong> @visitante
-                                    @if (p.PenalesLocal.HasValue)
-                                    {
-                                        <span class="text-muted">@ReglasEliminatoria.TextoPenales(p)</span>
-                                    }
-                                    <partial name="_EstadoPartidoBadge" model="p.Estado" />
-                                    <a asp-controller="Partidos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
-                                </div>
-                            }
+                            <div class="fp-tie__leg">
+                                <span class="fp-tie__leg-label">@etiqueta</span>
+                                <span>@local <strong class="fp-num">@ReglasPartido.Marcador(p)</strong> @visitante</span>
+                                @if (p.PenalesLocal.HasValue)
+                                {
+                                    <span class="text-muted">@ReglasEliminatoria.TextoPenales(p)</span>
+                                }
+                                <partial name="_EstadoPartidoBadge" model="p.Estado" />
+                                <a class="fp-icon-link ms-auto" asp-controller="Partidos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
+                            </div>
+                        }
 
-                            @if (dosPartidos && partidos.Any(p => p.GolesLocal.HasValue))
-                            {
-                                <div class="small text-muted mt-1">Global: @nombreA @global.GolesA - @global.GolesB @nombreB</div>
-                            }
+                        @if (dosPartidos && partidos.Any(p => p.GolesLocal.HasValue))
+                        {
+                            <div class="small text-muted mt-2 fp-num">Global: @nombreA @global.GolesA - @global.GolesB @nombreB</div>
+                        }
 
-                            @if (c.Ganador is not null && !pasaDirecto)
-                            {
-                                <div class="small mt-1 text-success">
-                                    @(c.IdCruceSiguiente is null ? "Campeón" : "Avanza"): <strong>@c.Ganador.Nombre</strong>
-                                </div>
-                            }
-                        </div>
+                        @if (c.Ganador is not null && !pasaDirecto)
+                        {
+                            <div class="fp-tie__foot">
+                                @(c.IdCruceSiguiente is null ? "Campeón" : "Avanza"): @c.Ganador.Nombre
+                            </div>
+                        }
                     </div>
                 }
             </div>

@@ -7,15 +7,23 @@
     var volver = Url.Action("Index", "Solicitudes");
 }
 
-<h1 class="h3 mb-3">Solicitudes de inscripción</h1>
-<p class="text-muted">
-    Equipos pendientes de decisión y equipos rechazados de los torneos que organizas.
-    Elimina un equipo rechazado para liberar su nombre.
-</p>
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Organizador</div>
+        <h1>Solicitudes de inscripción</h1>
+        <p class="text-muted mb-0 mt-2">
+            Equipos pendientes de decisión y equipos rechazados de los torneos que organizas.
+            Elimina un equipo rechazado para liberar su nombre.
+        </p>
+    </div>
+</div>
 
 @if (Model.Count == 0)
 {
-    <p class="text-muted">No tienes solicitudes pendientes ni equipos rechazados.</p>
+    <div class="fp-empty">
+        <div class="fp-empty__ball" aria-hidden="true"></div>
+        <p class="mb-0">No tienes solicitudes pendientes ni equipos rechazados.</p>
+    </div>
 }
 
 @* Se agrupa por torneo. Se agrupa por el id (y no por el objeto Torneo) porque cada equipo trae su propia copia del torneo. *@
@@ -23,70 +31,78 @@
 {
     var torneo = grupo.First().Torneo!;
 
-    <h2 class="h5 mt-4">
-        <a asp-controller="Torneos" asp-action="Details" asp-route-id="@torneo.Codigo">@torneo.Nombre</a>
-        <small class="text-muted">
-            · <code>@torneo.Codigo</code>
-            · @Html.DisplayFor(m => torneo.ModoInscripcion)
-            · @Html.DisplayFor(m => torneo.Estado)
-            @if (torneo.MaxEquipos.HasValue)
-            {
-                <text>· máx. @torneo.MaxEquipos equipos</text>
-            }
-        </small>
-    </h2>
+    <section class="fp-block">
+        <div class="fp-block__head">
+            <div>
+                <h2><a class="text-reset" asp-controller="Torneos" asp-action="Details" asp-route-id="@torneo.Codigo">@torneo.Nombre</a></h2>
+                <div class="fp-match__meta">
+                    <code>@torneo.Codigo</code>
+                    <span class="fp-badge fp-badge--formato">@Html.DisplayFor(m => torneo.ModoInscripcion)</span>
+                    <partial name="_EstadoBadge" model="torneo.Estado" />
+                    @if (torneo.MaxEquipos.HasValue)
+                    {
+                        <span class="fp-badge fp-badge--formato">máx. @torneo.MaxEquipos equipos</span>
+                    }
+                </div>
+            </div>
+        </div>
 
-    <table class="table align-middle">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Equipo</th>
-                <th>Responsable</th>
-                <th>Estado</th>
-                <th>Jugadores</th>
-                <th>Decisión</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var e in grupo)
-            {
-                <tr>
-                    <td><img src="@Url.UrlEscudo(e.LogoEscudo)" alt="Escudo de @e.Nombre" width="40" height="40" class="rounded border" /></td>
-                    <td>
-                        <a asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo">@e.Nombre</a>
-                        <div class="text-muted small">@(string.IsNullOrWhiteSpace(e.Ciudad) ? "Sin ciudad" : e.Ciudad)</div>
-                    </td>
-                    <td>@e.Responsable?.NombreUsuario</td>
-                    <td>@Html.DisplayFor(m => e.EstadoInscripcion)</td>
-                    <td>
-                        @* Lista desplegable nativa de HTML: el organizador ve los jugadores sin salir de esta pantalla *@
-                        <details>
-                            <summary>@e.Jugadores.Count jugador(es)</summary>
-                            <ul class="mb-0 ps-3">
-                                @foreach (var j in e.Jugadores.OrderBy(jug => jug.Dorsal))
-                                {
-                                    <li>#@j.Dorsal @j.NombreCompleto (@Html.DisplayFor(m => j.Posicion))@(j.EsCapitan ? " · capitán" : "")</li>
-                                }
-                            </ul>
-                        </details>
-                    </td>
-                    <td>
-                        @* Aprobar y Rechazar son POST (cambian datos) con token antiforgery, que el form agrega solo *@
-                        <form asp-controller="Equipos" asp-action="Aprobar" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success">Aprobar</button>
-                        </form>
+        <div class="fp-table-wrap">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 64px;"></th>
+                        <th>Equipo</th>
+                        <th>Responsable</th>
+                        <th>Estado</th>
+                        <th>Jugadores</th>
+                        <th class="text-end">Decisión</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in grupo)
+                    {
+                        <tr>
+                            <td><img src="@Url.UrlEscudo(e.LogoEscudo)" alt="Escudo de @e.Nombre" class="fp-crest" /></td>
+                            <td>
+                                <a class="fw-semibold" asp-controller="Equipos" asp-action="Details" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo">@e.Nombre</a>
+                                <div class="text-muted small">@(string.IsNullOrWhiteSpace(e.Ciudad) ? "Sin ciudad" : e.Ciudad)</div>
+                            </td>
+                            <td>@e.Responsable?.NombreUsuario</td>
+                            <td><partial name="_InscripcionBadge" model="e.EstadoInscripcion" /></td>
+                            <td>
+                                @* Lista desplegable nativa de HTML: el organizador ve los jugadores sin salir de esta pantalla *@
+                                <details class="fp-details">
+                                    <summary>@e.Jugadores.Count jugador(es)</summary>
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var j in e.Jugadores.OrderBy(jug => jug.Dorsal))
+                                        {
+                                            <li>#@j.Dorsal @j.NombreCompleto (@Html.DisplayFor(m => j.Posicion))@(j.EsCapitan ? " · capitán" : "")</li>
+                                        }
+                                    </ul>
+                                </details>
+                            </td>
+                            <td class="fp-td-actions">
+                                <div class="fp-actions">
+                                    @* Aprobar y Rechazar son POST (cambian datos) con token antiforgery, que el form agrega solo *@
+                                    <form asp-controller="Equipos" asp-action="Aprobar" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" method="post">
+                                        <button type="submit" class="btn btn-sm btn-success">Aprobar</button>
+                                    </form>
 
-                        @if (e.EstadoInscripcion == EstadoInscripcion.Pendiente)
-                        {
-                            <form asp-controller="Equipos" asp-action="Rechazar" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-warning">Rechazar</button>
-                            </form>
-                        }
+                                    @if (e.EstadoInscripcion == EstadoInscripcion.Pendiente)
+                                    {
+                                        <form asp-controller="Equipos" asp-action="Rechazar" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" method="post">
+                                            <button type="submit" class="btn btn-sm btn-warning">Rechazar</button>
+                                        </form>
+                                    }
 
-                        <a asp-controller="Equipos" asp-action="Delete" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" class="btn btn-sm btn-outline-danger">Eliminar</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                                    <a asp-controller="Equipos" asp-action="Delete" asp-route-codigoTorneo="@torneo.Codigo" asp-route-idEquipo="@e.IdEquipo" asp-route-returnUrl="@volver" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 }

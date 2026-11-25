@@ -17,34 +17,46 @@
         : ronda.Nombre + (ronda.Grupo is null ? string.Empty : $" · {ronda.Grupo.Nombre}");
 }
 
-<p class="mb-1">
-    <a asp-action="Index" asp-route-codigoTorneo="@t.Codigo">&larr; Partidos de @t.Nombre</a>
-</p>
+<a asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="fp-back">&larr; Partidos de @t.Nombre</a>
 
-<h1 class="h3 mb-1">@p.Local?.Nombre vs @p.Visitante?.Nombre</h1>
-<p class="text-muted">@rondaTexto</p>
-
-<div class="d-flex align-items-center mb-3">
-    <span class="display-5 fw-bold me-3">@ReglasPartido.Marcador(p)</span>
-    @if (p.PenalesLocal.HasValue)
-    {
-        <span class="fs-5 text-muted me-3">@ReglasEliminatoria.TextoPenales(p)</span>
-    }
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">@(string.IsNullOrEmpty(rondaTexto) ? "Partido" : rondaTexto)</div>
+        <h1>@p.Local?.Nombre vs @p.Visitante?.Nombre</h1>
+    </div>
     <partial name="_EstadoPartidoBadge" model="p.Estado" />
 </div>
 
-<dl class="row">
-    <dt class="col-sm-3">Fecha y hora</dt>
-    <dd class="col-sm-9">@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</dd>
+@* ---------- Marcador ---------- *@
+<section class="fp-versus" aria-label="Marcador">
+    <div class="fp-versus__team">@p.Local?.Nombre</div>
+    <div>
+        <span class="fp-versus__score">@ReglasPartido.Marcador(p)</span>
+        @if (p.PenalesLocal.HasValue)
+        {
+            <span class="fp-versus__sub">@ReglasEliminatoria.TextoPenales(p)</span>
+        }
+    </div>
+    <div class="fp-versus__team">@p.Visitante?.Nombre</div>
+</section>
 
-    <dt class="col-sm-3">Árbitro</dt>
-    <dd class="col-sm-9">@(p.Arbitro?.NombreUsuario ?? "Sin designar")</dd>
-</dl>
+<section class="fp-panel mt-3">
+    <dl class="fp-facts">
+        <div class="fp-fact">
+            <dt>Fecha y hora</dt>
+            <dd class="fp-num">@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</dd>
+        </div>
+        <div class="fp-fact">
+            <dt>Árbitro</dt>
+            <dd>@(p.Arbitro?.NombreUsuario ?? "Sin designar")</dd>
+        </div>
+    </dl>
+</section>
 
 @* ---------- Eliminatoria (Paso 6, entrega C): solo si el partido es de un cruce de copa ---------- *@
 @if (Model.Eliminatoria is { } el)
 {
-    <div class="alert alert-secondary">
+    <div class="alert alert-secondary mt-3">
         <div class="fw-bold">
             @(el.EsIdaYVuelta
                 ? (p.NumeroPartido == 1 ? "Eliminatoria · partido de ida" : "Eliminatoria · partido de vuelta")
@@ -83,60 +95,64 @@
 
     @if (el.PuedeRegistrarPenales)
     {
-        <h2 class="h5">Penales</h2>
+        <section class="fp-panel">
+            <h2 class="fp-section-title">Penales</h2>
 
-        <form asp-controller="Eliminatoria" asp-action="RegistrarPenales" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
-            <div class="col-6 col-md-3">
-                <label for="PenalesLocal" class="form-label">@p.Local?.Nombre</label>
-                <input type="number" id="PenalesLocal" name="PenalesLocal" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesLocal" />
-            </div>
-            <div class="col-6 col-md-3">
-                <label for="PenalesVisitante" class="form-label">@p.Visitante?.Nombre</label>
-                <input type="number" id="PenalesVisitante" name="PenalesVisitante" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesVisitante" />
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Guardar penales</button>
-            </div>
-            <div class="form-text">
-                Los penales no suman al marcador ni son eventos. No puede haber empate. Déjalos vacíos para quitarlos.
-            </div>
-        </form>
+            <form asp-controller="Eliminatoria" asp-action="RegistrarPenales" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="fp-inline-form">
+                <div class="c-3">
+                    <label for="PenalesLocal" class="form-label">@p.Local?.Nombre</label>
+                    <input type="number" id="PenalesLocal" name="PenalesLocal" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesLocal" />
+                </div>
+                <div class="c-3">
+                    <label for="PenalesVisitante" class="form-label">@p.Visitante?.Nombre</label>
+                    <input type="number" id="PenalesVisitante" name="PenalesVisitante" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesVisitante" />
+                </div>
+                <div class="c-auto">
+                    <button type="submit" class="btn btn-primary">Guardar penales</button>
+                </div>
+                <div class="form-text fp-inline-form__help">
+                    Los penales no suman al marcador ni son eventos. No puede haber empate. Déjalos vacíos para quitarlos.
+                </div>
+            </form>
+        </section>
     }
 }
 
 @* ---------- Botones de cambio de estado: solo los que ESTE usuario puede usar ---------- *@
 @if (Model.Transiciones.Count > 0)
 {
-    <h2 class="h5 mt-4">Estado del partido</h2>
+    <section class="fp-block">
+        <div class="fp-block__head"><h2>Estado del partido</h2></div>
 
-    <div class="d-flex flex-wrap gap-2 mb-3">
-        @foreach (var nuevo in Model.Transiciones)
-        {
-            // Las acciones difíciles de deshacer piden confirmación antes de enviarse
-            string? confirmar = nuevo == EstadoPartido.Finalizado
-                ? "return confirm('¿Finalizar el partido?');"
-                : (nuevo == EstadoPartido.EnVivo && p.Estado == EstadoPartido.Finalizado
-                    ? "return confirm('¿Reabrir el partido finalizado?');"
-                    : null);
-
-            var claseBoton = nuevo switch
+        <div class="fp-actions">
+            @foreach (var nuevo in Model.Transiciones)
             {
-                EstadoPartido.EnVivo => "btn-danger",
-                EstadoPartido.Finalizado => "btn-success",
-                EstadoPartido.Suspendido => "btn-warning",
-                _ => "btn-outline-secondary"
-            };
+                // Las acciones difíciles de deshacer piden confirmación antes de enviarse
+                string? confirmar = nuevo == EstadoPartido.Finalizado
+                    ? "return confirm('¿Finalizar el partido?');"
+                    : (nuevo == EstadoPartido.EnVivo && p.Estado == EstadoPartido.Finalizado
+                        ? "return confirm('¿Reabrir el partido finalizado?');"
+                        : null);
 
-            <form asp-action="CambiarEstado" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" onsubmit="@confirmar">
-                <input type="hidden" name="nuevoEstado" value="@nuevo" />
-                <button type="submit" class="btn @claseBoton">@ReglasPartido.TextoAccion(p.Estado, nuevo)</button>
-            </form>
-        }
-    </div>
+                var claseBoton = nuevo switch
+                {
+                    EstadoPartido.EnVivo => "btn-danger",
+                    EstadoPartido.Finalizado => "btn-primary",
+                    EstadoPartido.Suspendido => "btn-warning",
+                    _ => "btn-outline-secondary"
+                };
+
+                <form asp-action="CambiarEstado" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" onsubmit="@confirmar">
+                    <input type="hidden" name="nuevoEstado" value="@nuevo" />
+                    <button type="submit" class="btn @claseBoton">@ReglasPartido.TextoAccion(p.Estado, nuevo)</button>
+                </form>
+            }
+        </div>
+    </section>
 }
 else if (Model.EsArbitro && !p.EsDescanso)
 {
-    <p class="text-muted">
+    <div class="alert alert-info mt-3">
         No hay acciones disponibles para ti en este estado.
         @if (p.Estado == EstadoPartido.Finalizado)
         {
@@ -146,200 +162,223 @@ else if (Model.EsArbitro && !p.EsDescanso)
         {
             <span>Solo el organizador puede volver a programar un partido suspendido.</span>
         }
-    </p>
+    </div>
 }
 
 @* ---------- Eventos del partido (goles y tarjetas): la lista la ve cualquiera ---------- *@
 @if (!p.EsDescanso)
 {
-    <h2 class="h5 mt-4">Eventos del partido</h2>
+    <section class="fp-block">
+        <div class="fp-block__head">
+            <h2>Eventos del partido <span class="fp-count fp-count--plain">@Model.Eventos.Count</span></h2>
+        </div>
 
-    @if (Model.Eventos.Count == 0)
-    {
-        <p class="text-muted">Todavía no hay eventos registrados.</p>
-    }
-    else
-    {
-        <table class="table table-sm align-middle">
-            <thead>
-                <tr>
-                    <th>Min.</th>
-                    <th>Equipo</th>
-                    <th>Evento</th>
-                    <th>Jugador</th>
-                    @if (Model.PuedeModificarEventos)
-                    {
-                        <th></th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var ev in Model.Eventos)
-                {
-                    // En un Autogol, "Equipo" es el del jugador que se equivocó (el gol cuenta para el rival)
-                    var nombreEquipo = ev.IdEquipo == p.IdLocal ? p.Local?.Nombre : p.Visitante?.Nombre;
-
-                    var textoEvento = ev.Tipo == TipoEvento.Gol && ev.IdJugador is null
-                        ? "Gol (sin jugador)"
-                        : ev.Tipo == TipoEvento.Autogol
-                            ? "Autogol (en contra)"
-                            : ReglasEvento.NombreTipo(ev.Tipo);
-
-                    var claseEvento = ev.Tipo switch
-                    {
-                        TipoEvento.Amarilla => "badge bg-warning text-dark",
-                        TipoEvento.Roja => "badge bg-danger",
-                        TipoEvento.Autogol => "badge bg-secondary",
-                        _ => "badge bg-success"
-                    };
-
-                    <tr>
-                        <td>@(ev.Minuto.HasValue ? $"{ev.Minuto}'" : "-")</td>
-                        <td>@nombreEquipo</td>
-                        <td><span class="@claseEvento">@textoEvento</span></td>
-                        <td>@(ev.Jugador is null ? "-" : $"#{ev.Jugador.Dorsal} {ev.Jugador.NombreCompleto}")</td>
-                        @if (Model.PuedeModificarEventos)
+        @if (Model.Eventos.Count == 0)
+        {
+            <div class="fp-empty">
+                <div class="fp-empty__ball" aria-hidden="true"></div>
+                <p class="mb-0">Todavía no hay eventos registrados.</p>
+            </div>
+        }
+        else
+        {
+            <div class="fp-table-wrap">
+                <table class="table fp-table--sm align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Min.</th>
+                            <th>Equipo</th>
+                            <th>Evento</th>
+                            <th>Jugador</th>
+                            @if (Model.PuedeModificarEventos)
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ev in Model.Eventos)
                         {
-                            <td class="text-end">
-                                <form asp-controller="Eventos" asp-action="Eliminar" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" asp-route-idEvento="@ev.IdEvento" method="post" onsubmit="return confirm('¿Eliminar este evento? El marcador se ajustará.');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                                </form>
-                            </td>
+                            // En un Autogol, "Equipo" es el del jugador que se equivocó (el gol cuenta para el rival)
+                            var nombreEquipo = ev.IdEquipo == p.IdLocal ? p.Local?.Nombre : p.Visitante?.Nombre;
+
+                            var textoEvento = ev.Tipo == TipoEvento.Gol && ev.IdJugador is null
+                                ? "Gol (sin jugador)"
+                                : ev.Tipo == TipoEvento.Autogol
+                                    ? "Autogol (en contra)"
+                                    : ReglasEvento.NombreTipo(ev.Tipo);
+
+                            var claseEvento = ev.Tipo switch
+                            {
+                                TipoEvento.Amarilla => "amarilla",
+                                TipoEvento.Roja => "roja",
+                                TipoEvento.Autogol => "autogol",
+                                _ => "gol"
+                            };
+
+                            <tr>
+                                <td class="fp-num">@(ev.Minuto.HasValue ? $"{ev.Minuto}'" : "-")</td>
+                                <td>@nombreEquipo</td>
+                                <td><span class="fp-badge fp-badge--@claseEvento">@textoEvento</span></td>
+                                <td>@(ev.Jugador is null ? "-" : $"#{ev.Jugador.Dorsal} {ev.Jugador.NombreCompleto}")</td>
+                                @if (Model.PuedeModificarEventos)
+                                {
+                                    <td class="fp-td-actions">
+                                        <form asp-controller="Eventos" asp-action="Eliminar" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" asp-route-idEvento="@ev.IdEvento" method="post" onsubmit="return confirm('¿Eliminar este evento? El marcador se ajustará.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
                         }
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 
     @* Formulario: solo organizador y árbitro, y solo cuando ReglasEvento lo permite (EnVivo; el organizador también Finalizado) *@
     @if (Model.PuedeModificarEventos)
     {
-        <h3 class="h6 mt-3">Registrar evento</h3>
+        <section class="fp-panel mt-3">
+            <h3 class="fp-section-title">Registrar evento</h3>
 
-        <form asp-controller="Eventos" asp-action="Registrar" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-2">
-            <div class="col-sm-6 col-md-3">
-                <label for="Tipo" class="form-label">Tipo</label>
-                <select id="Tipo" name="Tipo" class="form-select">
-                    @foreach (var tipo in Enum.GetValues<TipoEvento>())
+            <form asp-controller="Eventos" asp-action="Registrar" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="fp-inline-form">
+                <div class="c-3">
+                    <label for="Tipo" class="form-label">Tipo</label>
+                    <select id="Tipo" name="Tipo" class="form-select">
+                        @foreach (var tipo in Enum.GetValues<TipoEvento>())
+                        {
+                            <option value="@tipo">@ReglasEvento.NombreTipo(tipo)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="c-4">
+                    <label for="IdJugador" class="form-label">Jugador</label>
+                    <select id="IdJugador" name="IdJugador" class="form-select">
+                        <option value="">(Sin jugador: solo para un gol)</option>
+                        <optgroup label="@p.Local?.Nombre">
+                            @foreach (var j in Model.JugadoresLocal)
+                            {
+                                <option value="@j.IdJugador">#@j.Dorsal @j.NombreCompleto</option>
+                            }
+                        </optgroup>
+                        <optgroup label="@p.Visitante?.Nombre">
+                            @foreach (var j in Model.JugadoresVisitante)
+                            {
+                                <option value="@j.IdJugador">#@j.Dorsal @j.NombreCompleto</option>
+                            }
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="c-3">
+                    <label for="IdEquipo" class="form-label">Equipo del gol</label>
+                    <select id="IdEquipo" name="IdEquipo" class="form-select">
+                        <option value="">(Solo si no eliges jugador)</option>
+                        <option value="@p.IdLocal">@p.Local?.Nombre</option>
+                        <option value="@p.IdVisitante">@p.Visitante?.Nombre</option>
+                    </select>
+                </div>
+
+                <div class="c-2">
+                    <label for="Minuto" class="form-label">Minuto</label>
+                    <input type="number" id="Minuto" name="Minuto" min="0" max="130" class="form-control" />
+                </div>
+
+                <div class="form-text fp-inline-form__help">
+                    El minuto es opcional. El marcador se actualiza solo: un gol o autogol lo cambia y al eliminar el evento se corrige.
+                    La segunda amarilla de un jugador agrega una roja automática.
+                    @if (Model.EsOrganizador && p.Estado == EstadoPartido.Finalizado)
                     {
-                        <option value="@tipo">@ReglasEvento.NombreTipo(tipo)</option>
+                        <span>Como organizador puedes corregir los eventos aunque el partido ya haya finalizado.</span>
                     }
-                </select>
-            </div>
+                </div>
 
-            <div class="col-sm-6 col-md-4">
-                <label for="IdJugador" class="form-label">Jugador</label>
-                <select id="IdJugador" name="IdJugador" class="form-select">
-                    <option value="">(Sin jugador: solo para un gol)</option>
-                    <optgroup label="@p.Local?.Nombre">
-                        @foreach (var j in Model.JugadoresLocal)
-                        {
-                            <option value="@j.IdJugador">#@j.Dorsal @j.NombreCompleto</option>
-                        }
-                    </optgroup>
-                    <optgroup label="@p.Visitante?.Nombre">
-                        @foreach (var j in Model.JugadoresVisitante)
-                        {
-                            <option value="@j.IdJugador">#@j.Dorsal @j.NombreCompleto</option>
-                        }
-                    </optgroup>
-                </select>
-            </div>
-
-            <div class="col-sm-6 col-md-3">
-                <label for="IdEquipo" class="form-label">Equipo del gol</label>
-                <select id="IdEquipo" name="IdEquipo" class="form-select">
-                    <option value="">(Solo si no eliges jugador)</option>
-                    <option value="@p.IdLocal">@p.Local?.Nombre</option>
-                    <option value="@p.IdVisitante">@p.Visitante?.Nombre</option>
-                </select>
-            </div>
-
-            <div class="col-sm-6 col-md-1">
-                <label for="Minuto" class="form-label">Minuto</label>
-                <input type="number" id="Minuto" name="Minuto" min="0" max="130" class="form-control" />
-            </div>
-
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Registrar</button>
-            </div>
-        </form>
-
-        <div class="form-text mb-3">
-            El minuto es opcional. El marcador se actualiza solo: un gol o autogol lo cambia y al eliminar el evento se corrige.
-            La segunda amarilla de un jugador agrega una roja automática.
-            @if (Model.EsOrganizador && p.Estado == EstadoPartido.Finalizado)
-            {
-                <span>Como organizador puedes corregir los eventos aunque el partido ya haya finalizado.</span>
-            }
-        </div>
+                <div class="c-auto fp-inline-form__help">
+                    <button type="submit" class="btn btn-primary">Registrar evento</button>
+                </div>
+            </form>
+        </section>
     }
 }
 
 @* ---------- Herramientas del organizador ---------- *@
 @if (Model.EsOrganizador)
 {
-    <h2 class="h5 mt-4">Gestión del organizador</h2>
+    <section class="fp-block">
+        <div class="fp-block__head"><h2>Gestión del organizador</h2></div>
 
-    @if (Model.PuedeAsignarArbitro)
-    {
-        <form asp-action="AsignarArbitro" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
-            <div class="col-sm-6 col-md-4">
-                <label for="nombreUsuario" class="form-label">Árbitro (nombre de usuario)</label>
-                <input type="text" id="nombreUsuario" name="nombreUsuario" class="form-control" value="@p.Arbitro?.NombreUsuario" />
-                <div class="form-text">Déjalo vacío para quitar al árbitro.</div>
+        @if (Model.PuedeAsignarArbitro)
+        {
+            <div class="fp-panel">
+                <h3 class="fp-section-title">Árbitro</h3>
+                <form asp-action="AsignarArbitro" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="fp-inline-form">
+                    <div class="c-6">
+                        <label for="nombreUsuario" class="form-label">Nombre de usuario</label>
+                        <input type="text" id="nombreUsuario" name="nombreUsuario" class="form-control" value="@p.Arbitro?.NombreUsuario" />
+                        <div class="form-text">Déjalo vacío para quitar al árbitro.</div>
+                    </div>
+                    <div class="c-auto">
+                        <button type="submit" class="btn btn-primary">Guardar árbitro</button>
+                    </div>
+                </form>
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Guardar árbitro</button>
+        }
+
+        @if (Model.PuedeEditarFecha)
+        {
+            <div class="fp-panel">
+                <h3 class="fp-section-title">Fecha y hora</h3>
+                <form asp-action="ProgramarFecha" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="fp-inline-form">
+                    <div class="c-6">
+                        <label for="fechaHora" class="form-label">Fecha y hora</label>
+                        <input type="datetime-local" id="fechaHora" name="fechaHora" class="form-control" value="@fechaInput" />
+                        <div class="form-text">Déjala vacía para quitar la fecha.</div>
+                    </div>
+                    <div class="c-auto">
+                        <button type="submit" class="btn btn-primary">Guardar fecha</button>
+                    </div>
+                </form>
             </div>
-        </form>
-    }
+        }
 
-    @if (Model.PuedeEditarFecha)
-    {
-        <form asp-action="ProgramarFecha" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
-            <div class="col-sm-6 col-md-4">
-                <label for="fechaHora" class="form-label">Fecha y hora</label>
-                <input type="datetime-local" id="fechaHora" name="fechaHora" class="form-control" value="@fechaInput" />
-                <div class="form-text">Déjala vacía para quitar la fecha.</div>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Guardar fecha</button>
-            </div>
-        </form>
-    }
+        @* El historial lo ve SOLO el organizador (el servicio ni siquiera lo carga para los demás). *@
+        <div class="fp-panel">
+            <h3 class="fp-section-title">Historial de cambios de estado</h3>
 
-    @* El historial lo ve SOLO el organizador (el servicio ni siquiera lo carga para los demás). *@
-    <h2 class="h5 mt-4">Historial de cambios de estado</h2>
+            @if (Model.Historial.Count == 0)
+            {
+                <p class="text-muted mb-0">Todavía no hay cambios de estado registrados.</p>
+            }
+            else
+            {
+                <div class="fp-table-wrap">
+                    <table class="table fp-table--sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha y hora</th>
+                                <th>Usuario</th>
+                                <th>Cambio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Historial)
+                            {
+                                @* El historial se guarda en UTC: se muestra en la hora local del servidor *@
+                                var fechaLocal = DateTime.SpecifyKind(c.FechaHora, DateTimeKind.Utc).ToLocalTime();
 
-    @if (Model.Historial.Count == 0)
-    {
-        <p class="text-muted">Todavía no hay cambios de estado registrados.</p>
-    }
-    else
-    {
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Fecha y hora</th>
-                    <th>Usuario</th>
-                    <th>Cambio</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var c in Model.Historial)
-                {
-                    @* El historial se guarda en UTC: se muestra en la hora local del servidor *@
-                    var fechaLocal = DateTime.SpecifyKind(c.FechaHora, DateTimeKind.Utc).ToLocalTime();
-
-                    <tr>
-                        <td>@fechaLocal.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                        <td>@(c.Usuario?.NombreUsuario ?? "(usuario eliminado)")</td>
-                        <td>@ReglasPartido.NombreEstado(c.EstadoAnterior) &rarr; @ReglasPartido.NombreEstado(c.EstadoNuevo)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+                                <tr>
+                                    <td class="fp-num text-nowrap">@fechaLocal.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td>@(c.Usuario?.NombreUsuario ?? "(usuario eliminado)")</td>
+                                    <td>@ReglasPartido.NombreEstado(c.EstadoAnterior) &rarr; @ReglasPartido.NombreEstado(c.EstadoNuevo)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
 }

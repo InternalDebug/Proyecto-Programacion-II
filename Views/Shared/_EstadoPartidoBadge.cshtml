@@ -5,10 +5,10 @@
 @{
     var clase = Model switch
     {
-        EstadoPartido.EnVivo => "bg-danger",
-        EstadoPartido.Finalizado => "bg-success",
-        EstadoPartido.Suspendido => "bg-warning text-dark",
-        _ => "bg-secondary"
+        EstadoPartido.EnVivo => "envivo",
+        EstadoPartido.Finalizado => "finalizado",
+        EstadoPartido.Suspendido => "suspendido",
+        _ => "programado"
     };
 }
-<span class="badge @clase">@ReglasPartido.NombreEstado(Model)</span>
+<span class="fp-badge fp-badge--@clase">@ReglasPartido.NombreEstado(Model)</span>

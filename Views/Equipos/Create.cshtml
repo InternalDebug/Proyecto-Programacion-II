@@ -3,22 +3,35 @@
     ViewData["Title"] = "Inscribir equipo";
 }
 
-<h1 class="h3 mb-1">Inscribir equipo</h1>
-<p class="text-muted">Torneo: <code>@Model.CodigoTorneo</code></p>
+<a asp-controller="Torneos" asp-action="Details" asp-route-id="@Model.CodigoTorneo" class="fp-back">&larr; Volver al torneo</a>
+
+<div class="fp-page-head">
+    <div>
+        <div class="fp-eyebrow">Inscripción</div>
+        <h1>Inscribir equipo</h1>
+        <div class="fp-code-chip mt-2">Torneo <code>@Model.CodigoTorneo</code></div>
+    </div>
+</div>
 
 @* enctype="multipart/form-data" es OBLIGATORIO para poder enviar el archivo del escudo *@
-<form asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@Model.CodigoTorneo" method="post" enctype="multipart/form-data">
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+<form asp-controller="Equipos" asp-action="Create" asp-route-codigoTorneo="@Model.CodigoTorneo" method="post" enctype="multipart/form-data" class="fp-card fp-card--form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-    <h2 class="h5">Datos del equipo</h2>
-    <partial name="_CamposEquipo" model="Model" />
+    <div class="fp-form-section">
+        <h2 class="fp-section-title">Datos del equipo</h2>
+        <partial name="_CamposEquipo" model="Model" />
+    </div>
 
-    <h2 class="h5 mt-4">Primer jugador</h2>
-    <p class="text-muted">Todo equipo necesita al menos un jugador al inscribirse. Podrás agregar más desde la página del equipo.</p>
-    <partial name="_CamposJugador" for="PrimerJugador" />
+    <div class="fp-form-section">
+        <h2 class="fp-section-title">Primer jugador</h2>
+        <p class="text-muted small">Todo equipo necesita al menos un jugador al inscribirse. Podrás agregar más desde la página del equipo.</p>
+        <partial name="_CamposJugador" for="PrimerJugador" />
+    </div>
 
-    <button type="submit" class="btn btn-primary">Inscribir equipo</button>
-    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@Model.CodigoTorneo" class="btn btn-link">Cancelar</a>
+    <div class="fp-form-actions">
+        <button type="submit" class="btn btn-primary">Inscribir equipo</button>
+        <a asp-controller="Torneos" asp-action="Details" asp-route-id="@Model.CodigoTorneo" class="btn btn-link">Cancelar</a>
+    </div>
 </form>
 
 @section Scripts {

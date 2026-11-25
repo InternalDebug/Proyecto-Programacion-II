@@ -2,15 +2,15 @@
 @model FairPlay.Services.ResumenArbitraje
 
 <li class="nav-item">
-    <a class="nav-link text-dark" asp-controller="Partidos" asp-action="Arbitrados">
+    <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Arbitrados" ? "active" : "")" asp-controller="Partidos" asp-action="Arbitrados">
         Mis partidos
         @if (Model.EnVivo > 0)
         {
-            <span class="badge bg-danger" title="En vivo">@Model.EnVivo</span>
+            <span class="fp-count fp-count--live" title="En vivo">@Model.EnVivo</span>
         }
         @if (Model.PorJugar > 0)
         {
-            <span class="badge bg-secondary" title="Programados">@Model.PorJugar</span>
+            <span class="fp-count" title="Programados">@Model.PorJugar</span>
         }
     </a>
 </li>
