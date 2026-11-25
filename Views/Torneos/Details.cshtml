@@ -72,6 +72,25 @@
             }
         }
     </p>
+
+    @* Calendario (Paso 6): iniciar el torneo, o gestionar el calendario ya generado. *@
+    <p>
+        @if (t.Estado == EstadoTorneo.Inscripcion)
+        {
+            @if (ReglasCalendario.FormatoDisponible(t.Formato))
+            {
+                <a asp-controller="Calendario" asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-warning">Iniciar torneo (generar calendario)</a>
+            }
+            else
+            {
+                <span class="text-muted">El calendario del formato @ReglasCalendario.NombreFormato(t.Formato) estará disponible próximamente.</span>
+            }
+        }
+        else if (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado)
+        {
+            <a asp-controller="Calendario" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Gestionar calendario</a>
+        }
+    </p>
 }
 
 <h2 class="h4 mt-4">Equipos</h2>

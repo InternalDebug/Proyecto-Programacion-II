@@ -1,0 +1,140 @@
+@using FairPlay.Services
+@model FairPlay.ViewModels.PreparacionCalendarioViewModel
+@{
+    var t = Model.Torneo;
+    var regenerar = Model.EsRegeneracion;
+    ViewData["Title"] = (regenerar ? "Regenerar calendario" : "Iniciar torneo") + " - " + t.Nombre;
+
+    // Texto del cuadro de confirmación (se calcula aquí para no mezclar comillas dentro del atributo onclick).
+    var textoConfirmar = regenerar
+        ? "Se borrará el calendario actual y se generará uno nuevo. ¿Continuar?"
+        : "Se iniciará el torneo y se cerrarán las inscripciones. ¿Continuar?";
+}
+
+<p class="mb-1">
+    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
+</p>
+
+<h1 class="h3 mb-3">@(regenerar ? "Regenerar calendario" : "Iniciar torneo")</h1>
+
+@* ---------- Qué va a pasar ---------- *@
+<div class="alert alert-info">
+    @if (regenerar)
+    {
+        <p class="mb-2">
+            Se <strong>borrará el calendario actual</strong> (jornadas, partidos, fechas y árbitros designados) y se generará uno nuevo
+            con el sorteo que dejes aquí. Solo es posible porque todavía no se jugó ningún partido.
+        </p>
+    }
+    else
+    {
+        <p class="mb-2">
+            Al iniciar, el torneo pasará a <strong>En curso</strong>, se cerrarán las inscripciones y se generará el calendario de la liga
+            (todos contra todos).
+        </p>
+    }
+
+    <p class="mb-0">
+        Cada equipo aprobado necesita al menos <strong>@ReglasCalendario.MinJugadoresPorEquipo jugadores</strong>,
+        un <strong>capitán</strong> y un <strong>portero</strong>.
+    </p>
+</div>
+
+@if (!regenerar && Model.PendientesARechazar > 0)
+{
+    <div class="alert alert-warning">
+        Hay <strong>@Model.PendientesARechazar</strong> solicitud(es) de inscripción pendiente(s). Al iniciar el torneo se
+        <strong>rechazarán automáticamente</strong>. Si quieres aprobarlas, hazlo antes de continuar.
+    </div>
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+@foreach (var problema in Model.ProblemasGenerales)
+{
+    <div class="alert alert-danger">@problema</div>
+}
+
+@if (Model.Equipos.Count > 0)
+{
+    <form asp-action="Iniciar" asp-route-codigoTorneo="@t.Codigo" method="post">
+
+        <h2 class="h5">Sorteo</h2>
+        <p class="text-muted">
+            La <strong>posición</strong> decide los emparejamientos: por ejemplo, la 1 enfrenta a la última en la primera jornada.
+            Puedes <strong>sortear al azar</strong> o escribir tú mismo las posiciones (semillas). Para intercambiar dos equipos,
+            cambia sus números. Cada número del 1 al @Model.Equipos.Count debe usarse una sola vez.
+        </p>
+
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Posición</th>
+                    <th>Equipo</th>
+                    <th>Jugadores</th>
+                    <th>Requisitos</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Equipos.Count; i++)
+                {
+                    var e = Model.Equipos[i];
+                    <tr>
+                        <td>
+                            <input type="hidden" name="Posiciones[@(i)].IdEquipo" value="@e.IdEquipo" />
+                            <input type="number" name="Posiciones[@(i)].Posicion" value="@e.Posicion"
+                                   min="1" max="@Model.Equipos.Count" class="form-control form-control-sm"
+                                   aria-label="Posición de @e.Nombre" />
+                        </td>
+                        <td>@e.Nombre</td>
+                        <td>@e.Jugadores</td>
+                        <td>
+                            @if (e.Problemas.Count == 0)
+                            {
+                                <span class="text-success">Completo</span>
+                            }
+                            else
+                            {
+                                <ul class="text-danger small mb-0 ps-3">
+                                    @foreach (var problema in e.Problemas)
+                                    {
+                                        <li>@problema</li>
+                                    }
+                                </ul>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="form-check mb-3">
+            @* El checkbox va ANTES del hidden: así, si está marcado, llega "true" primero y se usa ese valor. *@
+            <input type="checkbox" class="form-check-input" id="idaYVuelta" name="IdaYVuelta" value="true" checked="@Model.IdaYVuelta" />
+            <input type="hidden" name="IdaYVuelta" value="false" />
+            <label class="form-check-label" for="idaYVuelta">Ida y vuelta (cada equipo juega dos veces contra cada rival)</label>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            @* Este botón usa OTRA acción del controlador (Sortear) pero envía el mismo formulario. *@
+            <button type="submit" class="btn btn-outline-secondary" asp-action="Sortear" asp-route-codigoTorneo="@t.Codigo">Sortear al azar</button>
+
+            @if (Model.PuedeIniciar)
+            {
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('@textoConfirmar');">
+                    @(regenerar ? "Regenerar calendario" : "Iniciar torneo y generar calendario")
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-success" disabled>@(regenerar ? "Regenerar calendario" : "Iniciar torneo y generar calendario")</button>
+            }
+        </div>
+
+        @if (!Model.PuedeIniciar)
+        {
+            <p class="text-muted small mt-2">Corrige los requisitos marcados en rojo para poder continuar.</p>
+        }
+    </form>
+}

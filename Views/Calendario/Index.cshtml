@@ -1,0 +1,76 @@
+@using System.Globalization
+@using FairPlay.Models.Enums
+@model FairPlay.ViewModels.GestionCalendarioViewModel
+@{
+    var t = Model.Torneo;
+    ViewData["Title"] = "Calendario - " + t.Nombre;
+
+    // En un torneo finalizado las jornadas ya no se editan.
+    bool editable = t.Estado != EstadoTorneo.Finalizado;
+}
+
+<p class="mb-1">
+    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
+</p>
+
+<h1 class="h3 mb-1">Gestionar calendario</h1>
+<p class="text-muted">Torneo: @t.Nombre · <code>@t.Codigo</code></p>
+
+<p class="d-flex flex-wrap gap-2 align-items-center">
+    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
+
+    @if (Model.PuedeRegenerar)
+    {
+        <a asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-danger">Regenerar calendario</a>
+    }
+    else if (Model.MotivoNoRegenerar is not null)
+    {
+        <span class="text-muted small">@Model.MotivoNoRegenerar</span>
+    }
+</p>
+
+@if (Model.Rondas.Count == 0)
+{
+    <p class="text-muted">Este torneo todavía no tiene calendario. Se genera al iniciar el torneo.</p>
+}
+else
+{
+    <p class="text-muted">
+        Puedes cambiar el nombre de cada jornada y ponerle una fecha de inicio (opcional).
+        La fecha y la hora de cada partido se fijan en el detalle del partido.
+    </p>
+
+    @foreach (var r in Model.Rondas)
+    {
+        var fechaInput = r.FechaInicio?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+
+        <div class="border rounded p-3 mb-2">
+            @if (editable)
+            {
+                <form asp-action="EditarRonda" asp-route-codigoTorneo="@t.Codigo" asp-route-idRonda="@r.IdRonda" method="post" class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label for="nombre-@r.IdRonda" class="form-label mb-0 small">Nombre</label>
+                        <input type="text" id="nombre-@r.IdRonda" name="Nombre" value="@r.Nombre" maxlength="60" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha-@r.IdRonda" class="form-label mb-0 small">Fecha de inicio (opcional)</label>
+                        <input type="date" id="fecha-@r.IdRonda" name="FechaInicio" value="@fechaInput" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-3 text-muted small">
+                        @r.Partidos partido(s)@(r.Descansos > 0 ? $" · {r.Descansos} descanso(s)" : string.Empty)
+                    </div>
+                    <div class="col-md-2 text-md-end">
+                        <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <strong>@r.Nombre</strong>
+                <span class="text-muted small">
+                    · @(r.FechaInicio?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "sin fecha") · @r.Partidos partido(s)
+                </span>
+            }
+        </div>
+    }
+}

@@ -33,6 +33,9 @@ builder.Services.AddScoped<IServicioPartidos, ServicioPartidos>();
 // --- Eventos del partido: goles y tarjetas (Paso 5) ---
 builder.Services.AddScoped<IServicioEventos, ServicioEventos>();
 
+// --- Calendario: iniciar el torneo, generar la Liga y editar jornadas (Paso 6) ---
+builder.Services.AddScoped<IServicioCalendario, ServicioCalendario>();
+
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>
