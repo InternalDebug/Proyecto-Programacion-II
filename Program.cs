@@ -30,6 +30,9 @@ builder.Services.AddSingleton<IAlmacenEscudos, AlmacenEscudos>();
 // --- Partidos, árbitro y cambios de estado (Paso 4) ---
 builder.Services.AddScoped<IServicioPartidos, ServicioPartidos>();
 
+// --- Eventos del partido: goles y tarjetas (Paso 5) ---
+builder.Services.AddScoped<IServicioEventos, ServicioEventos>();
+
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>

@@ -17,6 +17,7 @@ namespace FairPlay.Controllers;
 ///   POST /Torneos/{código}/Partidos/{idPartido}/Arbitro   -> Designar o quitar árbitro (solo el organizador)
 ///   POST /Torneos/{código}/Partidos/{idPartido}/Fecha     -> Fijar la fecha y hora (solo el organizador)
 ///   POST /Torneos/{código}/Partidos/{idPartido}/Estado    -> Cambiar el estado (organizador o árbitro del partido)
+///   (Los eventos del partido —goles y tarjetas— se registran en EventosController, pero se muestran en el Details de aquí.)
 ///   GET  /Partidos/Arbitrados                             -> "Mis partidos" (los que arbitro)
 ///
 /// A diferencia de EquiposController, aquí NO hay un [Route] a nivel de clase porque hay dos prefijos
@@ -30,11 +31,13 @@ public class PartidosController : ControladorBase
 {
     private readonly IServicioPartidos _partidos;
     private readonly IServicioTorneos _torneos;
+    private readonly IServicioEventos _eventos;
 
-    public PartidosController(IServicioPartidos partidos, IServicioTorneos torneos)
+    public PartidosController(IServicioPartidos partidos, IServicioTorneos torneos, IServicioEventos eventos)
     {
         _partidos = partidos;
         _torneos = torneos;
+        _eventos = eventos;
     }
 
     // ------------------------------------------------------------------
@@ -100,9 +103,20 @@ public class PartidosController : ControladorBase
             Transiciones = ReglasPartido.TransicionesDisponibles(partido, torneo.Estado, esOrganizador, esArbitro),
             PuedeEditarFecha = esOrganizador && ReglasPartido.PuedeEditarFecha(partido, torneo.Estado),
             PuedeAsignarArbitro = esOrganizador && ReglasPartido.PuedeAsignarArbitro(partido, torneo.Estado),
+            Eventos = partido.Eventos.ToList(),
+            PuedeModificarEventos = ReglasEvento.PuedeModificar(partido, torneo.Estado, esOrganizador, esArbitro),
             // El servicio solo carga el historial para el organizador; para los demás la lista llega vacía.
             Historial = partido.CambiosEstado.ToList()
         };
+
+        // Los jugadores solo hacen falta para el formulario de eventos: se consultan únicamente si este
+        // usuario puede usarlo.
+        if (modelo.PuedeModificarEventos)
+        {
+            var plantillas = await _eventos.ListarPlantillasAsync(partido.IdLocal, partido.IdVisitante);
+            modelo.JugadoresLocal = plantillas.Local;
+            modelo.JugadoresVisitante = plantillas.Visitante;
+        }
 
         return View(modelo);
     }

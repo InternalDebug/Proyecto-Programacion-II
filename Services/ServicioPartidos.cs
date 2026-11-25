@@ -58,6 +58,21 @@ public class ServicioPartidos : IServicioPartidos
             return ResultadoServicio<Partido>.NoEncontrado();
         }
 
+        // Eventos del partido (goles y tarjetas): son PÚBLICOS, como el marcador. Se cargan aparte para
+        // controlar el orden: por minuto, y los que no tienen minuto al final (en el orden en que se registraron).
+        // El orden se hace en memoria; OrderBy de LINQ es estable, así que el empate conserva el id.
+        var eventos = await _contexto.EventosPartido
+            .AsNoTracking()
+            .Include(e => e.Jugador)
+            .Where(e => e.IdPartido == partido.IdPartido)
+            .OrderBy(e => e.IdEvento)
+            .ToListAsync();
+
+        partido.Eventos = eventos
+            .OrderBy(e => e.Minuto.HasValue ? 0 : 1)
+            .ThenBy(e => e.Minuto)
+            .ToList();
+
         // REGLA DE VISIBILIDAD: el historial de cambios de estado es solo para el organizador.
         // Se carga aparte (y solo si hace falta) en vez de usar un Include, para que ningún otro
         // usuario pueda recibirlo ni por descuido de la vista.
