@@ -1,0 +1,105 @@
+@using FairPlay.Models.Enums
+@using FairPlay.Services
+@model FairPlay.ViewModels.LlaveViewModel
+@{
+    var t = Model.Torneo;
+    ViewData["Title"] = "Llave - " + t.Nombre;
+}
+
+<p class="mb-1">
+    <a asp-controller="Torneos" asp-action="Details" asp-route-id="@t.Codigo">&larr; @t.Nombre</a>
+</p>
+
+<h1 class="h3 mb-1">Llave</h1>
+<p class="text-muted">
+    Torneo: @t.Nombre · <code>@t.Codigo</code> ·
+    <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo">Ver todos los partidos</a>
+</p>
+
+@if (Model.Campeon is not null)
+{
+    <div class="alert alert-success">
+        <strong>Campeón: @Model.Campeon.Nombre</strong>
+    </div>
+}
+
+@if (Model.Rondas.Count == 0)
+{
+    <p class="text-muted">
+        Este torneo todavía no tiene eliminatoria. La llave se genera cuando el organizador inicia el torneo.
+    </p>
+}
+else
+{
+    @* Las rondas van una al lado de la otra (con desplazamiento horizontal en pantallas pequeñas). *@
+    <div class="row g-3 flex-nowrap overflow-auto pb-2">
+        @foreach (var ronda in Model.Rondas.OrderBy(r => r.Numero))
+        {
+            <div class="col-11 col-md-6 col-xl-4">
+                <h2 class="h6 text-uppercase text-muted">@ronda.Nombre</h2>
+
+                @foreach (var c in ronda.Cruces.OrderBy(c => c.Posicion))
+                {
+                    var nombreA = c.EquipoA?.Nombre ?? "Por definir";
+                    var nombreB = c.EquipoB?.Nombre ?? "Por definir";
+
+                    // Bye: el equipo A no tiene rival en este cruce y avanza solo.
+                    bool pasaDirecto = c.IdEquipoA.HasValue && !c.IdEquipoB.HasValue && c.IdGanador.HasValue;
+
+                    var partidos = c.Partidos.OrderBy(p => p.NumeroPartido).ToList();
+                    var global = ReglasEliminatoria.Global(c, partidos);
+
+                    // Un partido por "Ida"/"Vuelta" si hay dos; "Partido" si hay uno solo.
+                    bool dosPartidos = partidos.Count > 1;
+
+                    <div class="card mb-3">
+                        <div class="card-body p-3">
+                            @if (pasaDirecto)
+                            {
+                                <div><strong>@nombreA</strong></div>
+                                <div class="small text-muted">Pasa directo a la siguiente ronda</div>
+                            }
+                            else
+                            {
+                                <div class="@(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoA ? "fw-bold" : string.Empty)">@nombreA</div>
+                                <div class="small text-muted">vs</div>
+                                <div class="@(c.IdGanador.HasValue && c.IdGanador == c.IdEquipoB ? "fw-bold" : string.Empty)">@nombreB</div>
+                            }
+
+                            @foreach (var p in partidos)
+                            {
+                                var local = p.IdLocal == c.IdEquipoA ? nombreA : nombreB;
+                                var visitante = p.IdLocal == c.IdEquipoA ? nombreB : nombreA;
+                                var etiqueta = dosPartidos ? (p.NumeroPartido == 1 ? "Ida" : "Vuelta") : "Partido";
+
+                                <hr class="my-2" />
+                                <div class="small">
+                                    <span class="text-muted">@etiqueta:</span>
+                                    @local <strong>@ReglasPartido.Marcador(p)</strong> @visitante
+                                    @if (p.PenalesLocal.HasValue)
+                                    {
+                                        <span class="text-muted">@ReglasEliminatoria.TextoPenales(p)</span>
+                                    }
+                                    <partial name="_EstadoPartidoBadge" model="p.Estado" />
+                                    <a asp-controller="Partidos" asp-action="Details" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido">Ver</a>
+                                </div>
+                            }
+
+                            @if (dosPartidos && partidos.Any(p => p.GolesLocal.HasValue))
+                            {
+                                <div class="small text-muted mt-1">Global: @nombreA @global.GolesA - @global.GolesB @nombreB</div>
+                            }
+
+                            @if (c.Ganador is not null && !pasaDirecto)
+                            {
+                                <div class="small mt-1 text-success">
+                                    @(c.IdCruceSiguiente is null ? "Campeón" : "Avanza"): <strong>@c.Ganador.Nombre</strong>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

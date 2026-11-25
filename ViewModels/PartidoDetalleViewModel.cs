@@ -1,5 +1,6 @@
 using FairPlay.Models;
 using FairPlay.Models.Enums;
+using FairPlay.Services;
 
 namespace FairPlay.ViewModels;
 
@@ -38,6 +39,12 @@ public class PartidoDetalleViewModel
 
     /// <summary>Jugadores del equipo visitante, para el formulario de eventos (vacío si no se puede modificar).</summary>
     public List<Jugador> JugadoresVisitante { get; set; } = new();
+
+    /// <summary>
+    /// Datos de eliminatoria del partido (global, ganador, penales). Null si el partido no es de un cruce
+    /// (liga o suizo). Los calcula ServicioEliminatoria.ObtenerInfoAsync.
+    /// </summary>
+    public InfoEliminatoria? Eliminatoria { get; set; }
 
     /// <summary>
     /// Historial de cambios de estado (el más reciente primero). Solo se llena para el organizador:

@@ -19,6 +19,11 @@
 <p class="d-flex flex-wrap gap-2 align-items-center">
     <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
 
+    @if (t.Formato == FormatoTorneo.Copa)
+    {
+        <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver llave</a>
+    }
+
     @if (Model.PuedeRegenerar)
     {
         <a asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-danger">Regenerar calendario</a>
@@ -36,7 +41,7 @@
 else
 {
     <p class="text-muted">
-        Puedes cambiar el nombre de cada jornada y ponerle una fecha de inicio (opcional).
+        Puedes cambiar el nombre de cada @(t.Formato == FormatoTorneo.Copa ? "ronda" : "jornada") y ponerle una fecha de inicio (opcional).
         La fecha y la hora de cada partido se fijan en el detalle del partido.
     </p>
 

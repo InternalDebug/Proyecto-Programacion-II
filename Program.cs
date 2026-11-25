@@ -33,8 +33,12 @@ builder.Services.AddScoped<IServicioPartidos, ServicioPartidos>();
 // --- Eventos del partido: goles y tarjetas (Paso 5) ---
 builder.Services.AddScoped<IServicioEventos, ServicioEventos>();
 
-// --- Calendario: iniciar el torneo, generar la Liga y editar jornadas (Paso 6) ---
+// --- Calendario: iniciar el torneo, generar la Liga o la Copa y editar jornadas (Paso 6) ---
 builder.Services.AddScoped<IServicioCalendario, ServicioCalendario>();
+
+// --- Eliminatoria: llave, penales y avance de ganadores (Paso 6, entrega C) ---
+// Lo usan también ServicioPartidos y ServicioEventos, así que debe estar registrado.
+builder.Services.AddScoped<IServicioEliminatoria, ServicioEliminatoria>();
 
 // --- Autenticación por cookies ---
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

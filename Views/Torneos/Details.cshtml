@@ -46,6 +46,12 @@
 @* Los partidos son públicos para quien conozca el código del torneo *@
 <p>
     <a asp-controller="Partidos" asp-action="Index" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver partidos</a>
+
+    @* Copa (Paso 6, entrega C): la llave también es pública y existe desde que el torneo está en curso. *@
+    @if (t.Formato == FormatoTorneo.Copa && (t.Estado == EstadoTorneo.EnCurso || t.Estado == EstadoTorneo.Finalizado))
+    {
+        <a asp-controller="Eliminatoria" asp-action="Llave" asp-route-codigoTorneo="@t.Codigo" class="btn btn-outline-primary">Ver llave</a>
+    }
 </p>
 
 @* Solo el organizador ve estos botones (el servicio vuelve a comprobarlo en cada operación) *@
@@ -79,7 +85,9 @@
         {
             @if (ReglasCalendario.FormatoDisponible(t.Formato))
             {
-                <a asp-controller="Calendario" asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-warning">Iniciar torneo (generar calendario)</a>
+                <a asp-controller="Calendario" asp-action="Preparar" asp-route-codigoTorneo="@t.Codigo" class="btn btn-warning">
+                    @(t.Formato == FormatoTorneo.Copa ? "Iniciar torneo (generar llave)" : "Iniciar torneo (generar calendario)")
+                </a>
             }
             else
             {

@@ -16,11 +16,19 @@ public static class ReglasCalendario
     /// <summary>Mínimo de equipos aprobados para generar una liga.</summary>
     public const int MinEquiposLiga = 2;
 
+    /// <summary>Mínimo de equipos aprobados para generar una copa (eliminación directa): semifinales y final.</summary>
+    public const int MinEquiposCopa = 4;
+
     /// <summary>
-    /// Formatos cuyo calendario ya se puede generar. Por ahora solo la Liga; Copa, Grupos + Copa y
-    /// Suizo llegan en las siguientes entregas del Paso 6.
+    /// Formatos cuyo calendario ya se puede generar: Liga y Copa. Grupos + Copa y Suizo llegan en las
+    /// siguientes entregas del Paso 6.
     /// </summary>
-    public static bool FormatoDisponible(FormatoTorneo formato) => formato == FormatoTorneo.Liga;
+    public static bool FormatoDisponible(FormatoTorneo formato) =>
+        formato == FormatoTorneo.Liga || formato == FormatoTorneo.Copa;
+
+    /// <summary>Mínimo de equipos aprobados que exige el formato para poder iniciar el torneo.</summary>
+    public static int MinEquipos(FormatoTorneo formato) =>
+        formato == FormatoTorneo.Copa ? MinEquiposCopa : MinEquiposLiga;
 
     public static string NombreFormato(FormatoTorneo formato) => formato switch
     {

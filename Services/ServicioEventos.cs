@@ -10,12 +10,15 @@ public class ServicioEventos : IServicioEventos
 {
     private readonly FairPlayContext _contexto;
     private readonly ILogger<ServicioEventos> _logger;
+    private readonly IServicioEliminatoria _eliminatoria;
 
-    // ASP.NET Core entrega los dos objetos solos (inyección de dependencias).
-    public ServicioEventos(FairPlayContext contexto, ILogger<ServicioEventos> logger)
+    // ASP.NET Core entrega los tres objetos solos (inyección de dependencias).
+    // _eliminatoria (Paso 6, entrega C): protege la llave de una copa cuando se corrige un partido ya decidido.
+    public ServicioEventos(FairPlayContext contexto, ILogger<ServicioEventos> logger, IServicioEliminatoria eliminatoria)
     {
         _contexto = contexto;
         _logger = logger;
+        _eliminatoria = eliminatoria;
     }
 
     // ------------------------------------------------------------------
@@ -48,6 +51,14 @@ public class ServicioEventos : IServicioEventos
         if (bloqueo is not null)
         {
             return ResultadoServicio<ResultadoEvento>.Invalido(string.Empty, bloqueo);
+        }
+
+        // 2b) ELIMINATORIA (Paso 6, entrega C): si el ganador de este cruce ya avanzó, un gol podría cambiar
+        //     quién avanza. Hay que reabrir el partido primero (eso retira el avance si todavía es posible).
+        var bloqueoCruce = await _eliminatoria.MotivoBloqueoEventosAsync(partido);
+        if (bloqueoCruce is not null)
+        {
+            return ResultadoServicio<ResultadoEvento>.Invalido(string.Empty, bloqueoCruce);
         }
 
         // 3) DATOS DEL FORMULARIO
@@ -169,6 +180,9 @@ public class ServicioEventos : IServicioEventos
         var (golesLocal, golesVisitante) = ReglasEvento.AporteAlMarcador(tipo, idEquipo, partido.IdLocal);
         AplicarAlMarcador(partido, golesLocal, golesVisitante);
 
+        // Eliminatoria: si el marcador del cruce dejó de estar empatado, los penales guardados ya no hacen falta.
+        await _eliminatoria.LimpiarPenalesObsoletosAsync(partido);
+
         try
         {
             await _contexto.SaveChangesAsync();
@@ -212,6 +226,13 @@ public class ServicioEventos : IServicioEventos
         if (bloqueo is not null)
         {
             return ResultadoServicio<ResultadoEvento>.Invalido(string.Empty, bloqueo);
+        }
+
+        // Eliminatoria (Paso 6, entrega C): con el cruce ya decidido hay que reabrir el partido antes de corregirlo.
+        var bloqueoCruce = await _eliminatoria.MotivoBloqueoEventosAsync(partido);
+        if (bloqueoCruce is not null)
+        {
+            return ResultadoServicio<ResultadoEvento>.Invalido(string.Empty, bloqueoCruce);
         }
 
         // El evento debe ser de ESTE partido: un id de otro partido se trata como "no existe".
@@ -265,6 +286,9 @@ public class ServicioEventos : IServicioEventos
 
         var (golesLocal, golesVisitante) = ReglasEvento.AporteAlMarcador(evento.Tipo, evento.IdEquipo, partido.IdLocal);
         AplicarAlMarcador(partido, -golesLocal, -golesVisitante);
+
+        // Eliminatoria: si el marcador del cruce dejó de estar empatado, los penales guardados ya no hacen falta.
+        await _eliminatoria.LimpiarPenalesObsoletosAsync(partido);
 
         try
         {

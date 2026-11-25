@@ -42,7 +42,17 @@
             {
                 <tr>
                     <td>@p.Local?.Nombre</td>
-                    <td class="text-center fw-bold">@ReglasPartido.Marcador(p)</td>
+                    <td class="text-center fw-bold">
+                        @ReglasPartido.Marcador(p)
+                        @if (p.PenalesLocal.HasValue)
+                        {
+                            <div class="small fw-normal text-muted">@ReglasEliminatoria.TextoPenales(p)</div>
+                        }
+                        @if (p.IdCruce.HasValue && p.NumeroPartido == 2)
+                        {
+                            <div class="small fw-normal text-muted">Vuelta</div>
+                        }
+                    </td>
                     <td>@(p.EsDescanso ? "—" : p.Visitante?.Nombre)</td>
                     <td>@(p.FechaHora?.ToString("dd/MM/yyyy HH:mm") ?? "Por definir")</td>
                     <td>

@@ -32,12 +32,15 @@ public class PartidosController : ControladorBase
     private readonly IServicioPartidos _partidos;
     private readonly IServicioTorneos _torneos;
     private readonly IServicioEventos _eventos;
+    private readonly IServicioEliminatoria _eliminatoria;
 
-    public PartidosController(IServicioPartidos partidos, IServicioTorneos torneos, IServicioEventos eventos)
+    public PartidosController(
+        IServicioPartidos partidos, IServicioTorneos torneos, IServicioEventos eventos, IServicioEliminatoria eliminatoria)
     {
         _partidos = partidos;
         _torneos = torneos;
         _eventos = eventos;
+        _eliminatoria = eliminatoria;
     }
 
     // ------------------------------------------------------------------
@@ -108,6 +111,16 @@ public class PartidosController : ControladorBase
             // El servicio solo carga el historial para el organizador; para los demás la lista llega vacía.
             Historial = partido.CambiosEstado.ToList()
         };
+
+        // Eliminatoria (Paso 6, entrega C): si el partido es de un cruce de copa, se agregan el global, el
+        // ganador y el formulario de penales. Con el cruce ya decidido no se tocan los eventos: hay que reabrir
+        // el partido primero (el servicio también lo comprueba).
+        modelo.Eliminatoria = await _eliminatoria.ObtenerInfoAsync(idUsuario, partido);
+
+        if (modelo.Eliminatoria?.CruceDecidido == true)
+        {
+            modelo.PuedeModificarEventos = false;
+        }
 
         // Los jugadores solo hacen falta para el formulario de eventos: se consultan únicamente si este
         // usuario puede usarlo.

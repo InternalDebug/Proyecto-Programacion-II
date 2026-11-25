@@ -25,8 +25,11 @@ public record PreparacionCalendario(
 /// <summary>Posición (semilla) elegida para un equipo en el sorteo: 1 = primero.</summary>
 public record PosicionEquipo(int IdEquipo, int Posicion);
 
-/// <summary>Resumen de lo que se generó al iniciar el torneo (para el mensaje de confirmación).</summary>
-public record ResumenInicio(Torneo Torneo, int Jornadas, int Partidos, int Descansos, int EquiposRechazados);
+/// <summary>
+/// Resumen de lo que se generó al iniciar el torneo (para el mensaje de confirmación).
+/// En una Copa, Jornadas son las rondas de la llave y PasanDirecto los equipos que avanzan sin jugar (bye).
+/// </summary>
+public record ResumenInicio(Torneo Torneo, int Jornadas, int Partidos, int Descansos, int EquiposRechazados, int PasanDirecto = 0);
 
 /// <summary>Una jornada en el panel de gestión del calendario.</summary>
 public record RondaGestion(
@@ -46,7 +49,7 @@ public record CalendarioGestion(
     string? MotivoNoRegenerar);
 
 /// <summary>
-/// Lógica de negocio del calendario (Paso 6, entregas A y B: base común + Liga).
+/// Lógica de negocio del calendario (Paso 6, entregas A, B y C: base común + Liga + Copa).
 /// Todas las operaciones son solo para el organizador del torneo (el torneo se identifica por su CÓDIGO).
 /// </summary>
 public interface IServicioCalendario

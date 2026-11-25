@@ -26,6 +26,10 @@
 
 <div class="d-flex align-items-center mb-3">
     <span class="display-5 fw-bold me-3">@ReglasPartido.Marcador(p)</span>
+    @if (p.PenalesLocal.HasValue)
+    {
+        <span class="fs-5 text-muted me-3">@ReglasEliminatoria.TextoPenales(p)</span>
+    }
     <partial name="_EstadoPartidoBadge" model="p.Estado" />
 </div>
 
@@ -36,6 +40,69 @@
     <dt class="col-sm-3">Árbitro</dt>
     <dd class="col-sm-9">@(p.Arbitro?.NombreUsuario ?? "Sin designar")</dd>
 </dl>
+
+@* ---------- Eliminatoria (Paso 6, entrega C): solo si el partido es de un cruce de copa ---------- *@
+@if (Model.Eliminatoria is { } el)
+{
+    <div class="alert alert-secondary">
+        <div class="fw-bold">
+            @(el.EsIdaYVuelta
+                ? (p.NumeroPartido == 1 ? "Eliminatoria · partido de ida" : "Eliminatoria · partido de vuelta")
+                : (el.EsFinal ? "Final · partido único" : "Eliminatoria · partido único"))
+        </div>
+
+        @if (el.TextoGlobal is not null)
+        {
+            <div>@el.TextoGlobal</div>
+        }
+
+        @if (el.NombreGanador is not null)
+        {
+            <div>@(el.EsFinal ? "Campeón" : "Avanza"): <strong>@el.NombreGanador</strong></div>
+        }
+        else if (el.EsPartidoDecisivo && el.EmpatadoSinDefinir && (p.Estado == EstadoPartido.EnVivo || p.Estado == EstadoPartido.Finalizado))
+        {
+            <div>
+                @(el.EsIdaYVuelta ? "El marcador global está empatado" : "El partido está empatado"):
+                el cruce se decide por penales y no se puede finalizar sin ellos.
+            </div>
+        }
+        else if (el.EsIdaYVuelta && p.NumeroPartido == 2)
+        {
+            <div class="small text-muted">La vuelta cierra el cruce: gana quien tenga más goles en el global.</div>
+        }
+
+        @if (el.CruceDecidido && Model.EsOrganizador)
+        {
+            <div class="small text-muted mt-1">
+                Para corregir este partido (eventos o penales), reábrelo primero. Eso retira el avance del ganador
+                mientras el siguiente cruce no se haya jugado.
+            </div>
+        }
+    </div>
+
+    @if (el.PuedeRegistrarPenales)
+    {
+        <h2 class="h5">Penales</h2>
+
+        <form asp-controller="Eliminatoria" asp-action="RegistrarPenales" asp-route-codigoTorneo="@t.Codigo" asp-route-idPartido="@p.IdPartido" method="post" class="row g-2 align-items-end mb-3">
+            <div class="col-6 col-md-3">
+                <label for="PenalesLocal" class="form-label">@p.Local?.Nombre</label>
+                <input type="number" id="PenalesLocal" name="PenalesLocal" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesLocal" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label for="PenalesVisitante" class="form-label">@p.Visitante?.Nombre</label>
+                <input type="number" id="PenalesVisitante" name="PenalesVisitante" min="0" max="@ReglasEliminatoria.MaxPenales" class="form-control" value="@p.PenalesVisitante" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Guardar penales</button>
+            </div>
+            <div class="form-text">
+                Los penales no suman al marcador ni son eventos. No puede haber empate. Déjalos vacíos para quitarlos.
+            </div>
+        </form>
+    }
+}
 
 @* ---------- Botones de cambio de estado: solo los que ESTE usuario puede usar ---------- *@
 @if (Model.Transiciones.Count > 0)

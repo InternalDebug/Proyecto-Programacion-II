@@ -84,9 +84,11 @@ public class ServicioCalendario : IServicioCalendario
 
         var generales = new List<string>();
 
-        if (aprobados.Count < ReglasCalendario.MinEquiposLiga)
+        int minimoEquipos = ReglasCalendario.MinEquipos(torneo.Formato);
+
+        if (aprobados.Count < minimoEquipos)
         {
-            generales.Add($"Se necesitan al menos {ReglasCalendario.MinEquiposLiga} equipos aprobados (hay {aprobados.Count}).");
+            generales.Add($"Se necesitan al menos {minimoEquipos} equipos aprobados para este formato (hay {aprobados.Count}).");
         }
 
         return ResultadoServicio<PreparacionCalendario>.Correcto(
@@ -152,11 +154,13 @@ public class ServicioCalendario : IServicioCalendario
             .Where(e => e.IdTorneo == torneo.IdTorneo && e.EstadoInscripcion == EstadoInscripcion.Aprobado)
             .ToListAsync();
 
-        if (aprobados.Count < ReglasCalendario.MinEquiposLiga)
+        int minimoEquipos = ReglasCalendario.MinEquipos(torneo.Formato);
+
+        if (aprobados.Count < minimoEquipos)
         {
             return ResultadoServicio<ResumenInicio>.Invalido(
                 string.Empty,
-                $"Se necesitan al menos {ReglasCalendario.MinEquiposLiga} equipos aprobados (hay {aprobados.Count}).");
+                $"Se necesitan al menos {minimoEquipos} equipos aprobados para este formato (hay {aprobados.Count}).");
         }
 
         var incompletos = aprobados
@@ -182,7 +186,6 @@ public class ServicioCalendario : IServicioCalendario
 
         // 4) EFECTOS: se arma todo en memoria y se guarda de una vez.
         var orden = posiciones.OrderBy(p => p.Posicion).Select(p => p.IdEquipo).ToList();
-        var jornadas = GeneradorLiga.Generar(orden, idaYVuelta);
 
         var pendientes = await _contexto.Equipos
             .Where(e => e.IdTorneo == torneo.IdTorneo && e.EstadoInscripcion == EstadoInscripcion.Pendiente)
@@ -195,6 +198,62 @@ public class ServicioCalendario : IServicioCalendario
         }
 
         torneo.Estado = EstadoTorneo.EnCurso;
+
+        // La fase y todo lo que cuelga de ella (participantes, rondas, cruces y partidos) se arma en memoria.
+        // Liga -> jornadas todos contra todos. Copa -> llave de eliminación directa.
+        // (Grupos + Copa y Suizo no llegan hasta aquí: ComprobarEstadoAsync ya los rechazó.)
+        var construida = torneo.Formato == FormatoTorneo.Copa
+            ? ConstruirFaseCopa(torneo, orden, idaYVuelta, posiciones)
+            : ConstruirFaseLiga(torneo, orden, idaYVuelta, posiciones);
+
+        _contexto.Fases.Add(construida.Fase);
+
+        // Se usa una transacción explícita porque al regenerar hay DOS pasos: borrar la fase anterior
+        // (con todas sus jornadas, cruces y partidos, en cascada) y crear la nueva. Si algo falla, no queda nada a medias.
+        // (Borrar y crear en el mismo SaveChanges podría chocar con UNIQUE (id_torneo, orden).)
+        await using var transaccion = await _contexto.Database.BeginTransactionAsync();
+
+        try
+        {
+            if (esRegeneracion)
+            {
+                await _contexto.Fases.Where(f => f.IdTorneo == torneo.IdTorneo).ExecuteDeleteAsync();
+            }
+
+            await _contexto.SaveChangesAsync();
+            await transaccion.CommitAsync();
+        }
+        catch (Exception ex) when (ex is DbUpdateException || ex is SqliteException)
+        {
+            _logger.LogError(ex, "No se pudo generar el calendario del torneo {Codigo}.", torneo.Codigo);
+
+            return ResultadoServicio<ResumenInicio>.Invalido(
+                string.Empty,
+                "No se pudo generar el calendario. No se hizo ningún cambio; inténtalo de nuevo.");
+        }
+
+        return ResultadoServicio<ResumenInicio>.Correcto(
+            new ResumenInicio(
+                torneo,
+                construida.Rondas,
+                construida.Partidos,
+                construida.Descansos,
+                pendientes.Count,
+                construida.PasanDirecto));
+    }
+
+    // ------------------------------------------------------------------
+    // CONSTRUCCIÓN DE LA FASE (en memoria, sin guardar)
+    // ------------------------------------------------------------------
+
+    /// <summary>Fase ya armada en memoria con sus conteos, para el mensaje de confirmación.</summary>
+    private record FaseConstruida(Fase Fase, int Rondas, int Partidos, int Descansos, int PasanDirecto);
+
+    /// <summary>Liga: una fase "Liga" con una ronda por jornada y un partido por emparejamiento.</summary>
+    private static FaseConstruida ConstruirFaseLiga(
+        Torneo torneo, IReadOnlyList<int> orden, bool idaYVuelta, IReadOnlyList<PosicionEquipo> posiciones)
+    {
+        var jornadas = GeneradorLiga.Generar(orden, idaYVuelta);
 
         var fase = new Fase
         {
@@ -232,37 +291,96 @@ public class ServicioCalendario : IServicioCalendario
             fase.Rondas.Add(ronda);
         }
 
-        _contexto.Fases.Add(fase);
-
-        // Se usa una transacción explícita porque al regenerar hay DOS pasos: borrar la fase anterior
-        // (con todas sus jornadas y partidos, en cascada) y crear la nueva. Si algo falla, no queda nada a medias.
-        // (Borrar y crear en el mismo SaveChanges podría chocar con UNIQUE (id_torneo, orden).)
-        await using var transaccion = await _contexto.Database.BeginTransactionAsync();
-
-        try
-        {
-            if (esRegeneracion)
-            {
-                await _contexto.Fases.Where(f => f.IdTorneo == torneo.IdTorneo).ExecuteDeleteAsync();
-            }
-
-            await _contexto.SaveChangesAsync();
-            await transaccion.CommitAsync();
-        }
-        catch (Exception ex) when (ex is DbUpdateException || ex is SqliteException)
-        {
-            _logger.LogError(ex, "No se pudo generar el calendario del torneo {Codigo}.", torneo.Codigo);
-
-            return ResultadoServicio<ResumenInicio>.Invalido(
-                string.Empty,
-                "No se pudo generar el calendario. No se hizo ningún cambio; inténtalo de nuevo.");
-        }
-
         int partidos = jornadas.Sum(j => j.Partidos.Count(p => p.IdVisitante is not null));
         int descansos = jornadas.Sum(j => j.Partidos.Count(p => p.IdVisitante is null));
 
-        return ResultadoServicio<ResumenInicio>.Correcto(
-            new ResumenInicio(torneo, jornadas.Count, partidos, descansos, pendientes.Count));
+        return new FaseConstruida(fase, jornadas.Count, partidos, descansos, 0);
+    }
+
+    /// <summary>
+    /// Copa (eliminación directa): una fase "Eliminatoria" con una ronda por etapa (cuartos, semifinales, final...)
+    /// y un cruce por enfrentamiento. Todos los cruces se crean ya, enlazados entre sí (cruce siguiente), pero
+    /// los PARTIDOS solo se crean para los cruces cuyos dos equipos ya se conocen: los de la primera ronda y los
+    /// de la segunda cuando dos equipos pasaron directo (bye). Los demás nacen cuando avanza el ganador
+    /// (ServicioEliminatoria). La final es siempre a partido único, aunque la fase sea de ida y vuelta.
+    /// </summary>
+    private static FaseConstruida ConstruirFaseCopa(
+        Torneo torneo, IReadOnlyList<int> orden, bool idaYVuelta, IReadOnlyList<PosicionEquipo> posiciones)
+    {
+        var llave = GeneradorLlave.Generar(orden);
+
+        var fase = new Fase
+        {
+            IdTorneo = torneo.IdTorneo,
+            Orden = 1,
+            Nombre = "Eliminatoria",
+            Tipo = TipoFase.Eliminatoria,
+            IdaYVuelta = idaYVuelta,
+            Estado = EstadoFase.EnCurso
+        };
+
+        // La semilla guarda la posición del sorteo.
+        foreach (var posicion in posiciones)
+        {
+            fase.Participantes.Add(new ParticipanteFase { IdEquipo = posicion.IdEquipo, Semilla = posicion.Posicion });
+        }
+
+        // Cruces de cada ronda, en orden de posición: sirven para enlazar cada cruce con el de la ronda siguiente.
+        var crucesPorRonda = new List<List<Cruce>>();
+        int partidos = 0;
+        int pasanDirecto = 0;
+
+        for (int r = 0; r < llave.Count; r++)
+        {
+            var generada = llave[r];
+            var ronda = new Ronda { Numero = generada.Numero, Nombre = generada.Nombre };
+            var cruces = new List<Cruce>();
+
+            // La final (última ronda) es siempre a partido único.
+            bool esFinal = r == llave.Count - 1;
+            bool dosPartidos = idaYVuelta && !esFinal;
+
+            foreach (var c in generada.Cruces)
+            {
+                var cruce = new Cruce { Posicion = c.Posicion, IdEquipoA = c.IdEquipoA, IdEquipoB = c.IdEquipoB };
+
+                if (c.PasaDirecto)
+                {
+                    // Bye: sin rival, el equipo A ya es el ganador y avanza solo (no se crea partido).
+                    cruce.IdGanador = c.IdEquipoA;
+                    pasanDirecto++;
+                }
+
+                ronda.Cruces.Add(cruce);
+                cruces.Add(cruce);
+
+                if (c.IdEquipoA.HasValue && c.IdEquipoB.HasValue)
+                {
+                    foreach (var partido in ReglasEliminatoria.PartidosDelCruce(c.IdEquipoA.Value, c.IdEquipoB.Value, dosPartidos))
+                    {
+                        // El partido cuelga de la ronda y del cruce; EF rellena id_ronda e id_cruce al guardar.
+                        ronda.Partidos.Add(partido);
+                        cruce.Partidos.Add(partido);
+                        partidos++;
+                    }
+                }
+            }
+
+            fase.Rondas.Add(ronda);
+            crucesPorRonda.Add(cruces);
+        }
+
+        // Enlace del cuadro: el cruce de índice i avanza al cruce de índice i / 2 de la ronda siguiente
+        // (posición p -> posición (p + 1) / 2; el índice empieza en 0).
+        for (int r = 0; r < crucesPorRonda.Count - 1; r++)
+        {
+            for (int i = 0; i < crucesPorRonda[r].Count; i++)
+            {
+                crucesPorRonda[r][i].CruceSiguiente = crucesPorRonda[r + 1][i / 2];
+            }
+        }
+
+        return new FaseConstruida(fase, llave.Count, partidos, 0, pasanDirecto);
     }
 
     // ------------------------------------------------------------------
@@ -390,7 +508,7 @@ public class ServicioCalendario : IServicioCalendario
         if (!ReglasCalendario.FormatoDisponible(torneo.Formato))
         {
             return ($"El calendario del formato \"{ReglasCalendario.NombreFormato(torneo.Formato)}\" todavía no está disponible. "
-                    + "Por ahora solo se puede iniciar un torneo de tipo Liga.", false);
+                    + "Por ahora solo se puede iniciar un torneo de tipo Liga o Copa.", false);
         }
 
         switch (torneo.Estado)

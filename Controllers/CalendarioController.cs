@@ -1,3 +1,4 @@
+using FairPlay.Models.Enums;
 using FairPlay.Services;
 using FairPlay.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -6,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace FairPlay.Controllers;
 
 /// <summary>
-/// Calendario de un torneo (Paso 6, entregas A y B): iniciar el torneo generando la Liga, regenerarla
-/// mientras no se haya jugado nada y editar el nombre y la fecha de las jornadas.
+/// Calendario de un torneo (Paso 6, entregas A, B y C): iniciar el torneo generando la Liga o la llave de la
+/// Copa, regenerarlos mientras no se haya jugado nada y editar el nombre y la fecha de las jornadas (rondas).
 /// Controlador "delgado": llama al servicio y traduce el resultado a una respuesta HTTP.
 ///
 /// Rutas (el torneo se identifica por su CÓDIGO). TODAS son solo para el organizador:
@@ -138,11 +139,28 @@ public class CalendarioController : ControladorBase
 
         var resumen = resultado.Valor!;
 
-        var mensaje = $"Calendario generado: {resumen.Jornadas} jornada(s) y {resumen.Partidos} partido(s).";
+        string mensaje;
 
-        if (resumen.Descansos > 0)
+        if (resumen.Torneo.Formato == FormatoTorneo.Copa)
         {
-            mensaje += $" Hay {resumen.Descansos} descanso(s) porque el número de equipos es impar.";
+            // Copa: se habla de rondas y de equipos que pasan directo (bye), no de jornadas ni descansos.
+            mensaje = $"Llave generada: {resumen.Jornadas} ronda(s) y {resumen.Partidos} partido(s) creados.";
+
+            if (resumen.PasanDirecto > 0)
+            {
+                mensaje += $" {resumen.PasanDirecto} equipo(s) pasan directo a la siguiente ronda porque el número de equipos no es potencia de 2.";
+            }
+
+            mensaje += " Los partidos de las rondas siguientes se crean solos cuando se conocen sus equipos.";
+        }
+        else
+        {
+            mensaje = $"Calendario generado: {resumen.Jornadas} jornada(s) y {resumen.Partidos} partido(s).";
+
+            if (resumen.Descansos > 0)
+            {
+                mensaje += $" Hay {resumen.Descansos} descanso(s) porque el número de equipos es impar.";
+            }
         }
 
         if (resumen.EquiposRechazados > 0)

@@ -1,8 +1,10 @@
+@using FairPlay.Models.Enums
 @using FairPlay.Services
 @model FairPlay.ViewModels.PreparacionCalendarioViewModel
 @{
     var t = Model.Torneo;
     var regenerar = Model.EsRegeneracion;
+    bool esCopa = t.Formato == FormatoTorneo.Copa; // Copa = eliminación directa; Liga = todos contra todos
     ViewData["Title"] = (regenerar ? "Regenerar calendario" : "Iniciar torneo") + " - " + t.Nombre;
 
     // Texto del cuadro de confirmación (se calcula aquí para no mezclar comillas dentro del atributo onclick).
@@ -22,15 +24,15 @@
     @if (regenerar)
     {
         <p class="mb-2">
-            Se <strong>borrará el calendario actual</strong> (jornadas, partidos, fechas y árbitros designados) y se generará uno nuevo
+            Se <strong>borrará el calendario actual</strong> (@(esCopa ? "llave, " : "jornadas, ")partidos, fechas y árbitros designados) y se generará uno nuevo
             con el sorteo que dejes aquí. Solo es posible porque todavía no se jugó ningún partido.
         </p>
     }
     else
     {
         <p class="mb-2">
-            Al iniciar, el torneo pasará a <strong>En curso</strong>, se cerrarán las inscripciones y se generará el calendario de la liga
-            (todos contra todos).
+            Al iniciar, el torneo pasará a <strong>En curso</strong>, se cerrarán las inscripciones y se generará
+            @(esCopa ? "la llave de eliminación directa." : "el calendario de la liga (todos contra todos).")
         </p>
     }
 
@@ -61,7 +63,18 @@
 
         <h2 class="h5">Sorteo</h2>
         <p class="text-muted">
-            La <strong>posición</strong> decide los emparejamientos: por ejemplo, la 1 enfrenta a la última en la primera jornada.
+            @if (esCopa)
+            {
+                <text>
+                    La <strong>posición</strong> (semilla) decide los cruces: la 1 enfrenta a la última y la 2 a la penúltima, y la 1 y la 2
+                    solo pueden verse en la final. Si el número de equipos no es potencia de 2, las <strong>mejores posiciones pasan directo</strong>
+                    a la siguiente ronda.
+                </text>
+            }
+            else
+            {
+                <text>La <strong>posición</strong> decide los emparejamientos: por ejemplo, la 1 enfrenta a la última en la primera jornada.</text>
+            }
             Puedes <strong>sortear al azar</strong> o escribir tú mismo las posiciones (semillas). Para intercambiar dos equipos,
             cambia sus números. Cada número del 1 al @Model.Equipos.Count debe usarse una sola vez.
         </p>
@@ -112,7 +125,11 @@
             @* El checkbox va ANTES del hidden: así, si está marcado, llega "true" primero y se usa ese valor. *@
             <input type="checkbox" class="form-check-input" id="idaYVuelta" name="IdaYVuelta" value="true" checked="@Model.IdaYVuelta" />
             <input type="hidden" name="IdaYVuelta" value="false" />
-            <label class="form-check-label" for="idaYVuelta">Ida y vuelta (cada equipo juega dos veces contra cada rival)</label>
+            <label class="form-check-label" for="idaYVuelta">
+                @(esCopa
+                    ? "Ida y vuelta (cada cruce se juega a dos partidos; la final es siempre a partido único)"
+                    : "Ida y vuelta (cada equipo juega dos veces contra cada rival)")
+            </label>
         </div>
 
         <div class="d-flex flex-wrap gap-2">

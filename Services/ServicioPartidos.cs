@@ -10,12 +10,15 @@ public class ServicioPartidos : IServicioPartidos
 {
     private readonly FairPlayContext _contexto;
     private readonly ILogger<ServicioPartidos> _logger;
+    private readonly IServicioEliminatoria _eliminatoria;
 
-    // ASP.NET Core entrega los dos objetos solos (inyección de dependencias).
-    public ServicioPartidos(FairPlayContext contexto, ILogger<ServicioPartidos> logger)
+    // ASP.NET Core entrega los tres objetos solos (inyección de dependencias).
+    // _eliminatoria (Paso 6, entrega C): avanza al ganador de un cruce cuando se finaliza su partido.
+    public ServicioPartidos(FairPlayContext contexto, ILogger<ServicioPartidos> logger, IServicioEliminatoria eliminatoria)
     {
         _contexto = contexto;
         _logger = logger;
+        _eliminatoria = eliminatoria;
     }
 
     // ------------------------------------------------------------------
@@ -49,6 +52,7 @@ public class ServicioPartidos : IServicioPartidos
             .Include(p => p.Local)
             .Include(p => p.Visitante)
             .Include(p => p.Arbitro)
+            .Include(p => p.Cruce) // para saber si es la final de una copa (ReglasEliminatoria.PuedeReabrirFinal)
             .Include(p => p.Ronda).ThenInclude(r => r!.Grupo)
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -268,7 +272,10 @@ public class ServicioPartidos : IServicioPartidos
     public async Task<ResultadoServicio<Partido>> CambiarEstadoAsync(
         int idUsuario, string? codigoTorneo, int idPartido, EstadoPartido nuevoEstado)
     {
-        var partido = await _contexto.PartidoDeTorneo(codigoTorneo, idPartido).FirstOrDefaultAsync();
+        // Include(Cruce): hace falta para reconocer la final de una copa (única excepción con el torneo Finalizado).
+        var partido = await _contexto.PartidoDeTorneo(codigoTorneo, idPartido)
+            .Include(p => p.Cruce)
+            .FirstOrDefaultAsync();
 
         if (partido is null)
         {
@@ -294,7 +301,13 @@ public class ServicioPartidos : IServicioPartidos
             return ResultadoServicio<Partido>.Invalido(string.Empty, "Un descanso no tiene estado que cambiar.");
         }
 
-        if (torneo.Estado == EstadoTorneo.Finalizado)
+        // Con el torneo Finalizado nada se modifica, salvo UNA excepción (Paso 6, entrega C): el organizador
+        // puede reabrir la final de una copa para corregirla; entonces el torneo vuelve a estar En curso.
+        bool reabreLaFinal = esOrganizador
+            && nuevoEstado == EstadoPartido.EnVivo
+            && ReglasEliminatoria.PuedeReabrirFinal(partido);
+
+        if (torneo.Estado == EstadoTorneo.Finalizado && !reabreLaFinal)
         {
             return ResultadoServicio<Partido>.Invalido(string.Empty, "El torneo ya finalizó; no se pueden cambiar sus partidos.");
         }
@@ -330,6 +343,18 @@ public class ServicioPartidos : IServicioPartidos
         {
             partido.GolesLocal = 0;
             partido.GolesVisitante = 0;
+        }
+
+        // 5b) ELIMINATORIA (Paso 6, entrega C). Si el partido es de un cruce:
+        //     - al FINALIZAR, el ganador avanza al cruce siguiente (o el torneo termina si era la final), y se
+        //       rechaza si el cruce sigue empatado sin penales;
+        //     - al REABRIR, se retira el avance (se rechaza si el cruce siguiente ya se jugó).
+        //     No guarda: el único SaveChanges de abajo guarda el partido, el historial y la llave juntos.
+        var errorEliminatoria = await _eliminatoria.AplicarCambioDeEstadoAsync(partido, estadoAnterior, nuevoEstado);
+
+        if (errorEliminatoria is not null)
+        {
+            return ResultadoServicio<Partido>.Invalido(string.Empty, errorEliminatoria);
         }
 
         // 6) HISTORIAL. Se agrega al MISMO contexto: SaveChanges guarda el cambio del partido y esta fila

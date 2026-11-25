@@ -84,14 +84,24 @@ public static class ReglasPartido
 
     /// <summary>
     /// Estados a los que este usuario puede pasar el partido AHORA (lista vacía = no hay botones).
-    /// Un descanso (sin visitante) no tiene estados que cambiar, y con el torneo Finalizado nada se modifica.
+    /// Un descanso (sin visitante) no tiene estados que cambiar, y con el torneo Finalizado nada se modifica
+    /// (salvo reabrir la final de una copa, ver ReglasEliminatoria.PuedeReabrirFinal).
     /// </summary>
     public static IReadOnlyList<EstadoPartido> TransicionesDisponibles(
         Partido partido, EstadoTorneo estadoTorneo, bool esOrganizador, bool esArbitro)
     {
-        if (partido.EsDescanso || estadoTorneo == EstadoTorneo.Finalizado)
+        if (partido.EsDescanso)
         {
             return Array.Empty<EstadoPartido>();
+        }
+
+        if (estadoTorneo == EstadoTorneo.Finalizado)
+        {
+            // Única excepción (Paso 6, entrega C): el organizador puede reabrir la final de una copa para
+            // corregirla; el torneo vuelve entonces a estar En curso. Necesita el Cruce del partido cargado.
+            return esOrganizador && ReglasEliminatoria.PuedeReabrirFinal(partido)
+                ? new[] { EstadoPartido.EnVivo }
+                : Array.Empty<EstadoPartido>();
         }
 
         return Enum.GetValues<EstadoPartido>()
